@@ -7,6 +7,8 @@ const path = require('path')
 const ExcelJS = require('exceljs');
 const { signinPage, createUser, login, getUser } = require("./controllers/signin");
 const fetchuser = require('./middleware/fetchuser');
+const XLSX = require('xlsx');
+const multer = require('multer');
 
 
 connectToMongo();
@@ -31,6 +33,43 @@ app.get('/reported', (req, res) =>{
 app.get('/signinpage', (req, res) =>{
     res.render('SigninPage.ejs')
 })
+
+const upload = multer({ dest: 'uploads/' }); // Define upload directory
+
+// Define route for uploading Excel file
+app.post('/upload', upload.single('file'), async (req, res) => {
+    try {
+        const workbook = XLSX.readFile(req.file.path);
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const emailColumn = 'A'; // Assuming emails are in the first column
+
+        const emailAddresses = [];
+        let i = 1;
+        while (true) {
+            const cell = sheet[emailColumn + i];
+            if (!cell || !cell.v) {
+                break;
+            }
+            emailAddresses.push(cell.v);
+            i++;
+        }
+
+        // Create users from email addresses
+        const users = await Promise.all(emailAddresses.map(async (email) => {
+            const existingUser = await User.findOne({ emailId: email });
+            if (existingUser) {
+                return existingUser;
+            }
+            return User.create({ emailId:email });
+        }));
+
+        res.status(200).json({ message: 'Users created successfully', users });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
 
 app.post('/users', async (req, res) => {
     try {
