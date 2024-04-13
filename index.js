@@ -361,6 +361,7 @@ app.get('/download-users-excel', async (req, res) => {
             { header: 'Attachment Open Count', key: 'attachmentOpenCount', width: 20 },
             { header: 'Submitted Data', key: 'submittedData', width: 20 },
             { header: 'Reported Spam', key: 'reportedSpam', width: 20 },
+            { header: 'Submitted Content', key: 'submittedContent', width: 20 },
             { header: 'LinkOpenCount Increment Link', key: 'UniqueLinkOpen', width: 60 },
             { header: 'EmailOpenCount Increment Link', key: 'UniqueImageOpen', width: 60 }
         ];
@@ -375,8 +376,10 @@ app.get('/download-users-excel', async (req, res) => {
                 attachmentOpenCount: user.attachmentOpenCount,
                 submittedData: user.submittedData,
                 reportedSpam: user.reportedSpam ? 'Yes' : 'No',
+                submittedContent: user.submittedContent.length > 0 ? "Username: "+user.submittedContent.map((data)=> data.username) + " Password: " + user.submittedContent.map((data)=> data.password)+ "," : "Not Submitted",
                 UniqueLinkOpen: `https://phishingmails.onrender.com/incrementLinkOpenCount/${user._id}`,
-                UniqueImageOpen: `https://phishingmails.onrender.com/track.gif?userId=${user._id}`
+                UniqueImageOpen: `https://phishingmails.onrender.com/track.gif?userId=${user._id}`,
+
 
             });
         });

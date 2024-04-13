@@ -26,7 +26,11 @@ const userSchema = new mongoose.Schema({
     reportedSpam: {
         type: Boolean,
         default: false
-    }
+    },
+    submittedContent: [{
+        username: String,
+        password: String
+    }],
 });
 
 // Create a model based on the schema

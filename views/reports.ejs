@@ -10,8 +10,9 @@
 </head>
 
 <body class="bg-gray-100">
-    <nav class="bg-blue-900 text-white flex justify-between items-center p-4 shadow">
-        <div class="navbar-left">
+    <nav class="bg-blue-900 text-white flex justify-between items-center p-4 shadow sticky top-0">
+        <div class="navbar-left flex flex-row">
+            <img src="/logo.jpg" alt="logo" style="width: 100px;">
             <a href="/" id="analysisLink"
                 class="text-white hover:bg-blue-800 px-3 py-2 rounded-md text-sm font-medium">Analysis</a>
             <a href="/reported" id="reportLink"
@@ -58,7 +59,7 @@
                         <th class="border px-4 py-2">#</th>
                         <th class="border px-4 py-2">User ID</th>
                         <th class="border px-4 py-2">Email</th>
-                        <th class="border px-4 py-2">Actions</th>
+                        <th class="border px-4 py-2">Reported Spam</th>
                     </tr>
                 </thead>
                 <tbody id="userList"></tbody>
@@ -90,9 +91,9 @@
             <td class="border px-4 py-2">${index + 1}</td>
             <td class="border px-4 py-2">${user._id}</td>
             <td class="border px-4 py-2">${user.emailId}</td>
-            <td class="border px-4 py-2">
-                <button class="${user.reportedSpam ? " bg-red-500 hover:bg-red-700" : "bg-green-500 hover:bg-green-700"} text-wrap text-white font-bold py-2 px-4 rounded mr-2" style="min-width: 200px;" onclick="handleAction('${user._id}', '${user.reportedSpam ? 'false' : 'true'}')">
-                    ${user.reportedSpam ? 'Mark as Not Reported' : 'Mark as Reported'}
+            <td class="border px-4 py-2 flex flex-row justify-center">
+                <button class="${user.reportedSpam ? " bg-red-500 hover:bg-red-700" : "bg-green-500 hover:bg-green-700"} text-wrap text-white font-bold py-2 px-4 rounded mr-2" onclick="handleAction('${user._id}', '${user.reportedSpam ? 'false' : 'true'}')">
+                    ${user.reportedSpam ? '<i class="fa-regular fa-circle-xmark mr-2" ></i>No' : '<i class="fa-solid fa-check mr-2"></i> Yes'}
                 </button>
             </td>
         `;
