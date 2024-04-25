@@ -1,7 +1,8 @@
 const connectToMongo = require('./db')
 const express = require('express')
 const bodyParser = require('body-parser');
-const User = require('./models/User');
+// const User = require('./models/User');
+const User = require('./models/campaign2');
 const sendMail = require('./utils/sendMail');
 const path = require('path')
 const ExcelJS = require('exceljs');
