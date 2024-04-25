@@ -1,7 +1,7 @@
 const connectToMongo = require('./db')
 const express = require('express')
 const bodyParser = require('body-parser');
-// const User = require('./models/User');
+const campaign1User = require('./models/User');
 const User = require('./models/campaign2');
 const sendMail = require('./utils/sendMail');
 const path = require('path')
@@ -25,13 +25,13 @@ app.set('views', path.join(__dirname, 'views'))
 
 const port = 5000
 
-app.get('/', (req, res) =>{
+app.get('/', (req, res) => {
     res.render('DataVisualization.ejs')
 })
-app.get('/reported', (req, res) =>{
+app.get('/reported', (req, res) => {
     res.render('reports.ejs')
 })
-app.get('/signinpage', (req, res) =>{
+app.get('/signinpage', (req, res) => {
     res.render('SigninPage.ejs')
 })
 
@@ -62,7 +62,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
             if (existingUser) {
                 return existingUser;
             }
-            return User.create({ emailId:email });
+            return User.create({ emailId: email });
         }));
 
         res.status(200).json({ message: 'Users created successfully', users });
@@ -174,12 +174,12 @@ app.get('/users-emails', async (req, res) => {
 // app.post('/login', async (req, res) => {
 //     try {
 //       const { username, password, userId } = req.body;
-  
+
 //       // Update the submittedData field for the user with the provided userId
 //       await User.findByIdAndUpdate(userId, { $inc: { submittedData: 1 } });
-  
+
 //       // You can add additional logic here for authentication, etc.
-  
+
 //       res.status(200).json({ message: 'Form submitted successfully' });
 //     } catch (error) {
 //       console.error(error);
@@ -188,7 +188,7 @@ app.get('/users-emails', async (req, res) => {
 //   });
 
 
-  
+
 // Defined API endpoint to fetch aggregated user stats
 app.get('/aggregate-user-stats', async (req, res) => {
     try {
@@ -199,9 +199,9 @@ app.get('/aggregate-user-stats', async (req, res) => {
                     _id: null,
                     totalUsers: { $sum: 1 }, // Total number of users
                     totalLinkOpenCount: { $sum: { $cond: { if: { $gt: ['$linkOpenCount', 0] }, then: 1, else: 0 } } },
-                    totalEmailOpenCount: { $sum: { $cond: { if: { $gt: ['$emailOpenCount', 0] }, then: 1, else: 0 } }  },
-                    totalAttachmentOpenCount: { $sum: { $cond: { if: { $gt: ['$attachmentOpenCount', 0] }, then: 1, else: 0 } }  },
-                    totalSubmittedData: { $sum: { $cond: { if: { $gt: ['$submittedData', 0] }, then: 1, else: 0 } }  }
+                    totalEmailOpenCount: { $sum: { $cond: { if: { $gt: ['$emailOpenCount', 0] }, then: 1, else: 0 } } },
+                    totalAttachmentOpenCount: { $sum: { $cond: { if: { $gt: ['$attachmentOpenCount', 0] }, then: 1, else: 0 } } },
+                    totalSubmittedData: { $sum: { $cond: { if: { $gt: ['$submittedData', 0] }, then: 1, else: 0 } } }
                 }
             }
         ]);
@@ -317,8 +317,8 @@ app.post('/send-email', async (req, res) => {
 app.put('/accept-report/:userId', async (req, res) => {
     try {
         const userId = req.params.userId;
-        const {action} = req.body;
-        
+        const { action } = req.body;
+
         // Find the user by ID
         const user = await User.findById(userId);
 
@@ -344,10 +344,16 @@ app.put('/accept-report/:userId', async (req, res) => {
 
 
 // Endpoint to download users data in Excel format
-app.get('/download-users-excel', async (req, res) => {
+app.get('/download-users-excel/:campaignNo', async (req, res) => {
     try {
         // Fetch all users from the database
-        const users = await User.find();
+        const campaignNo = req.params.campaignNo;
+        let users;
+        if (campaignNo == "campaign1") {
+            users = await campaign1User.find();
+        } else {
+            users = await User.find();
+        }
 
         // Create a new workbook and worksheet
         const workbook = new ExcelJS.Workbook();
@@ -377,7 +383,17 @@ app.get('/download-users-excel', async (req, res) => {
                 attachmentOpenCount: user.attachmentOpenCount,
                 submittedData: user.submittedData,
                 reportedSpam: user.reportedSpam ? 'Yes' : 'No',
-                submittedContent: user.submittedContent.length > 0 ? "Username: "+user.submittedContent.map((data)=> data.username) + " Password: " + user.submittedContent.map((data)=> data.password)+ "," : "Not Submitted",
+                submittedContent: user.submittedContent.length > 0 && campaignNo === "campaign1" ?
+                    `Usernames: ${user.submittedContent.map(data => data.username)} Passwords: ${user.submittedContent.map(data => data.password)},` :
+                    (user.submittedContent.length > 0 ?
+                        user.submittedContent.map(data => {
+                            let content = `Username: ${data.username}\nPassword: ${data.password}\nCategory: ${data.category}`;
+                            if (data.mobileNo) {
+                                content += `\nMobile No: ${data.mobileNo}`;
+                            }
+                            return content;
+                        }).join("\n") : "Not Submitted"
+                    ),
                 UniqueLinkOpen: `https://phishingmails.onrender.com/incrementLinkOpenCount/${user._id}`,
                 UniqueImageOpen: `https://phishingmails.onrender.com/track.gif?userId=${user._id}`,
 

@@ -17,6 +17,8 @@
                 class="text-white hover:bg-blue-800 px-3 py-2 rounded-md text-sm font-medium">Analysis</a>
             <a href="/reported" id="reportLink"
                 class="text-white hover:bg-blue-800 px-3 py-2 rounded-md text-sm font-medium">Reports</a>
+            <a href="/download-users-excel/campaign1" id="reportLink"
+                class="text-white hover:bg-blue-800 px-3 py-2 rounded-md text-sm font-medium">Campaign1 Data</a>
         </div>
         <div class="navbar-right">
             <button id="signOutBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md"  onclick="logout()">Sign
@@ -34,9 +36,10 @@
                 </form>
                 <!-- Button to open modal -->
                 <button onclick="openModal()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold px-4 py-2 rounded mx-4 flex items-center"><i class="fa-solid fa-user-plus pr-2"></i>Add User</button>
-                <a href="/download-users-excel"
+                <a href="/download-users-excel/campaign2"
                     class="bg-blue-500 hover:bg-blue-600 text-white font-bold px-4 rounded flex items-center"> <i
                         class="fas fa-file-excel mr-2"></i>Export to Excel</a>
+                
             </div>
         </div>
 
@@ -52,6 +55,7 @@
             </div>
         </div>
         <div class="overflow-x-auto">
+            <h1 class="my-4 text-xl font-bold text-indigo-500 underline">Second Campaign users...</h1>
             <table class="w-full table-auto">
                 <thead>
                     <tr>
