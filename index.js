@@ -2,7 +2,8 @@ const connectToMongo = require('./db')
 const express = require('express')
 const bodyParser = require('body-parser');
 const campaign1User = require('./models/User');
-const User = require('./models/campaign2');
+const campaign2User = require('./models/campaign2');
+const User = require('./models/campaign3');
 const sendMail = require('./utils/sendMail');
 const path = require('path')
 const ExcelJS = require('exceljs');
@@ -351,6 +352,8 @@ app.get('/download-users-excel/:campaignNo', async (req, res) => {
         let users;
         if (campaignNo == "campaign1") {
             users = await campaign1User.find();
+        } else if (campaignNo == "campaign2") {
+            users = await campaign2User.find();
         } else {
             users = await User.find();
         }
