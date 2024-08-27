@@ -124,10 +124,11 @@ app.post('/users', async (req, res) => {
     }
 });
 
-app.get('/users-emails', async (req, res) => {
+app.get('/users-emails/:campaignId', async (req, res) => {
     try {
         // Fetch all users from the database
-        const users = await User.find({}, '_id emailId reportedSpam'); // Assuming the fields are named '_id' and 'email' in the User model
+        const campaignId = req.params.campaignId;
+        const users = await User.find({campaignId}, '_id emailId reportedSpam'); // Assuming the fields are named '_id' and 'email' in the User model
 
         // Send the list of users with their IDs and emails as JSON response
         res.json(users);

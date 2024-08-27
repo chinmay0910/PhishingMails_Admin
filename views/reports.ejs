@@ -58,17 +58,20 @@
                     placeholder="Email Address">
 
                 <!-- Dropdown for Campaign ID -->
-                <select id="campaignId" class="w-full border rounded px-3 py-2 mb-4">
-                    <option value="" disabled selected>Select Campaign</option>
-                    <!-- Options will be populated dynamically here -->
-                </select>
+                <select id="campaignIdForCreateUser" class="w-full border rounded px-3 py-2 mb-4"
+                    name="campaignDropdown"></select>
 
                 <button onclick="addUser()" class="bg-blue-500 text-white px-4 py-2 rounded">Add</button>
                 <button onclick="closeModal()" class="bg-gray-500 text-white px-4 py-2 rounded ml-2">Cancel</button>
             </div>
         </div>
         <div class="overflow-x-auto">
-            <h1 class="my-4 text-xl font-bold text-indigo-500 underline">Third Campaign users...</h1>
+            <div class="flex flex-row items-center justify-between">
+                <h1 class="my-4 text-xl font-bold text-indigo-500 underline">Campaign users...</h1>
+                <select class="p-2 border border-2 border-green-400 outline-none rounded" id="campaignIdForFilterUsers"
+                    name="campaignDropdown" onchange="fetchUserEmails()" class="ml-auto"></select>
+            </div>
+
             <p id="message" class=""></p>
             <table class="w-full table-auto">
                 <thead>
@@ -79,7 +82,13 @@
                         <th class="border px-4 py-2">Reported Spam</th>
                     </tr>
                 </thead>
-                <tbody id="userList"></tbody>
+                <tbody id="userList">
+                    <tr>
+                        <td colspan="4" class="text-center py-4 text-gray-500">
+                            Please select a campaign to see the list of emails.
+                        </td>
+                    </tr>
+                </tbody>
             </table>
         </div>
     </div>
@@ -87,22 +96,65 @@
     <script>
         // Function to fetch users' emails from the server
         async function fetchUserEmails() {
+            const campaignId = document.getElementById('campaignIdForFilterUsers').value;
+            const userListBody = document.getElementById('userList');
+
+            if (!campaignId) {
+                userListBody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-gray-500">Please select a campaign to see the list of emails.</td></tr>';
+                return;
+            }
+
+            // Show loading state while fetching data
+            userListBody.innerHTML = '<tr><td colspan="4" class="text-center py-4">Loading emails...</td></tr>';
+
             try {
-                const response = await fetch('/users-emails');
+                const response = await fetch(`/users-emails/${campaignId}`);
+
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.statusText}`);
+                }
+
                 const users = await response.json();
-                displayUsers(users);
+
+                if (users.length === 0) {
+                    userListBody.innerHTML = 
+                        `<tr>
+                            <td colspan="4" class="text-center py-4 text-gray-500">
+                                No users found for this campaign.
+                            </td>
+                        </tr>`;
+                } else {
+                    displayUsers(users);
+                }
             } catch (error) {
                 console.error(error);
+                userListBody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-red-500">Failed to fetch emails. Please try again later.</td></tr>`;
             }
         }
 
-        async function fetchCampaigns() {
+        async function fetchCampaigns(purpose) {
             try {
                 const response = await fetch('/campaigns');
                 const campaigns = await response.json();
 
-                const campaignDropdown = document.getElementById('campaignId');
+                let campaignDropdown;
 
+                // Based on the purpose, decide which dropdown to render
+                if (purpose === 'createUser') {
+                    campaignDropdown = document.getElementById('campaignIdForCreateUser'); // Dropdown for creating user
+                } else if (purpose === 'filterUsers') {
+                    campaignDropdown = document.getElementById('campaignIdForFilterUsers'); // Dropdown for filtering users
+                }
+
+                // Clear the previous options (if any)
+                campaignDropdown.innerHTML = '';
+
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = 'Select a campaign';
+                campaignDropdown.appendChild(defaultOption);
+
+                // Populate the dropdown with campaigns
                 campaigns.forEach(campaign => {
                     const option = document.createElement('option');
                     option.value = campaign._id;
@@ -113,6 +165,7 @@
                 console.error('Error fetching campaigns:', error);
             }
         }
+
 
         // Function to display users on the screen
         function displayUsers(users) {
@@ -157,12 +210,14 @@
             }
         }
 
-        // Fetch users' emails when the page loads
-        fetchUserEmails();
+        window.onload = function () {
+            // Load campaigns in dropdown for filtering users
+            fetchCampaigns('filterUsers');
+        };
 
         function openModal() {
             document.getElementById('modal').classList.remove('hidden');
-            fetchCampaigns();
+            fetchCampaigns("createUser");
         }
 
         function closeModal() {
@@ -179,7 +234,7 @@
 
         async function addUser() {
             const emailId = document.getElementById('emailId').value;
-            const campaignId = document.getElementById('campaignId').value;
+            const campaignId = document.getElementById('campaignIdForCreateUser').value;
             const messageToSend = document.getElementById('message');
 
             if (!campaignId) {
