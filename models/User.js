@@ -5,7 +5,6 @@ const userSchema = new mongoose.Schema({
     emailId: {
         type: String,
         required: true,
-        unique: true // Assuming each email is unique
     },
     linkOpenCount: {
         type: Number,
@@ -36,6 +35,16 @@ const userSchema = new mongoose.Schema({
         ref: 'CampaignInfo',
         required: true
     },
+    ipAddress: {
+        type: String, 
+        default: "Not Found"
+    },
+    location: {
+        country: String,
+        region: String,
+        city: String,
+        coordinates: [Number] // [latitude, longitude]
+    }
 });
 
 // Create a model based on the schema

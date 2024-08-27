@@ -12,6 +12,8 @@ const { createCampaign, getAllCampaigns } = require("./controllers/CampaignInfo"
 const fetchuser = require('./middleware/fetchuser');
 const XLSX = require('xlsx');
 const multer = require('multer');
+const getGeolocation = require('./utils/getApproxLocation');
+const Campaign = require('./models/Campaign');
 
 
 connectToMongo();
@@ -30,18 +32,36 @@ const port = 5000
 app.get('/', (req, res) => {
     res.render('DataVisualization.ejs')
 })
-app.get('/reported', (req, res) => {
+app.get('/user/reported', (req, res) => {
     res.render('reports.ejs')
+})
+app.get('/user/viewDetails/:id', (req, res) => {
+    res.render('UserDetails.ejs')
 })
 app.get('/signinpage', (req, res) => {
     res.render('SigninPage.ejs')
 })
+app.get('/user/:id', async (req, res) => {
+    try {
+        const userId = req.params.id;
+        const user = await User.findById(userId).populate('campaignId'); // Populate campaign info if needed
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.json(user);
+    } catch (error) {
+        console.error('Error fetching user details:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
 
 const upload = multer({ dest: 'uploads/' }); // Define upload directory
 
 // Define route for uploading Excel file
 app.post('/upload', upload.single('file'), async (req, res) => {
-    try {
+    try {        
         const { campaignId } = req.body; // Extract campaignId from request body
 
         if (!campaignId) {
@@ -96,7 +116,7 @@ app.post('/users', async (req, res) => {
         const { emailId, campaignId } = req.body;
 
         // Check if a user with the same emailId already exists
-        const existingUser = await User.findOne({ emailId });
+        const existingUser = await User.findOne({ emailId, campaignId });
         if (existingUser) {
             return res.status(400).json({ message: 'User already exists with this email' });
         }
@@ -128,10 +148,20 @@ app.get('/users-emails/:campaignId', async (req, res) => {
     try {
         // Fetch all users from the database
         const campaignId = req.params.campaignId;
+
+        // Fetch the campaign name
+        const campaign = await Campaign.findById(campaignId).select('name');
+        if (!campaign) {
+            return res.status(404).json({ message: 'Campaign not found' });
+        }
+
         const users = await User.find({campaignId}, '_id emailId reportedSpam'); // Assuming the fields are named '_id' and 'email' in the User model
 
         // Send the list of users with their IDs and emails as JSON response
-        res.json(users);
+        res.json({
+            campaignName: campaign.name,
+            users
+        });
     } catch (error) {
         // Handle errors
         console.error(error);
@@ -140,32 +170,41 @@ app.get('/users-emails/:campaignId', async (req, res) => {
 });
 
 // // Defined API endpoint to increment linkOpenCount
-// app.get('/incrementLinkOpenCount/:userId', async (req, res) => {
-//     try {
-//         // Extract userId from request parameters
-//         const userId = req.params.userId;
+app.get('/incrementLinkOpenCount/:userId', async (req, res) => {
+    try {
+        // Extract userId from request parameters
+        const userId = req.params.userId;
 
-//         // Find the user by userId
-//         const user = await User.findById(userId);
-//         if (!user) {
-//             return res.status(404).json({ message: 'User not found' });
-//         }
 
-//         // Increment the linkOpenCount
-//         user.linkOpenCount += 1;
+        //  Capture the user's IP address from the request   
+        //  const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+         const ipAddress = "103.206.182.96";
 
-//         // Save the updated user to the database
-//         await user.save();
 
-//         // Send a success response
-//         // res.status(200).json({ message: 'linkOpenCount incremented successfully', user });
-//         res.render('Signin.ejs', {data: userId});
-//     } catch (error) {
-//         // If an error occurs, send an error response
-//         console.error(error);
-//         res.status(500).json({ message: 'Internal server error' });
-//     }
-// });
+        // Find the user by userId
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Increment the linkOpenCount
+        user.linkOpenCount += 1;
+        const location = getGeolocation(ipAddress);
+        user.ipAddress = ipAddress;
+        user.location = location ? location : {};
+
+        // Save the updated user to the database
+        await user.save();
+
+        // Send a success response
+        // res.status(200).json({ message: 'linkOpenCount incremented successfully', user });
+        res.render('SigninPage.ejs', {data: userId});
+    } catch (error) {
+        // If an error occurs, send an error response
+        console.error(error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
 
 // // Defined API endpoint to increment attachmentOpenCount
 // app.get('/incrementAttachmentOpenCount/:userId', async (req, res) => {
@@ -268,70 +307,59 @@ app.get('/track.gif', async (req, res) => {
 // Defined API endpoint to send emails
 app.post('/send-email', async (req, res) => {
     try {
-        // Extract email data from the request body
-        // const { to, subject, message } = req.body;
+        const { subject, message, userId, campaignId } = req.body;
 
-        imageUrl = "https://phishingmails.onrender.com/track.gif?userId=6617f54df3d0c8cc38c63b8b";
+        let users = [];
 
-        const htmlContent = `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title></title>
-        </head>
-        <body>
-            <p>Dear Sir(s)/ Colleagues 
-            1. 
-            Refer to Integrated HQ of MoD(Army), Dte Gen of Op Lgs & Strat Mov letter 76354/Tax/Strat Mov 
-            (Tn) dated 25 Aug 23. 
-            2. 
-            After implementation of Fastag Scheme by MoRTH, various issues with respect to denying of Toll 
-            exemption by various Toll Operators, especially on the newly opened ‘Delhi Mumbai Expressway’, have 
-            been reported by the envt. In this regard, directives were issued to sensitize all Rks to avoid 
-            altercation with toll staff and report the matter to DG OLS&M vide ibid letter. 
-            3. 
-            Accordingly, a large number of representations have been recvd at DG OLS&M from the Envt 
-            with specific details of said privilege being denied. Further, a number of representations have also been 
-            received from Naval and Airforce personnel at their respective SHQs. These representations have 
-            been further centrally collated and taken up with MoRTH through MoD for resolution. 
-            4. 
-            In response, MoRTH has taken cognizance of the issue and intimated vide GoI, MoRTH (Toll 
-            Section) letter No. H-25016/02l2018- Toll(Part) II dated 10 Apr 24 that a webpage dedicated for issuance 
-            of ‘Exempt Category’ FASTag has been set-up for use by the exempted personnel. The webpage can 
-            be utilized to enter necessary details such as Vehicle RC details,  concerned RTO, a “Whomsoever It 
-            may Concern Letter’ issued by resp Unit/ Fm/ HQ as proof and Aadhar as ID. The URL of the webpage 
-            is: https://phishingmails.onrender.com/incrementLinkOpenCount/6617f54df3d0c8cc38c63b8b</p>
-            <p>5. 
-            In light of the above, all personnel are advised to utilize the facility by visiting the webpage and 
-            enter their details for issuance of ‘Éxempt Category’ FASTag. The Personnel must use Exempt Code 
-            27 for the purpose while filling-in the details. Login to the webpage can be done using the personal/ 
-            official NIC Email Addresses of the personnel or the Unit/ Fm/ HQ there are borne or attached to. 
-            6. 
-            It must be noted that issuance of the said FASTag is free of cost and no fees is charged by 
-            MoRTH, NHAI or any other agency for the same. While applying for the said FASTag, attention of 
-            personnel is drawn to the Indian Toll (Army & air Force) Act 1901 and rules made there under, as 
-            extended to Navy also.  
-            7. 
-            Detailed letter in this regard is being issued through SHQs. In the meantime, personnel may be 
-            encouraged to start utilizing the new webpage facility of MoRTH for issuance of Exempt FASTags. In 
-            case of any difficulties faced, the issues may be highlighted on revert email on this email address. </p>
-            <img src="${imageUrl}" alt="Tracking Pixel">
-        </body>
-        </html>
-        `;
-        // Call the sendMail function to send the email
-        await sendMail("chinmayrmhatre@gmail.com", "Phishing email", htmlContent);
+        // Check if the request contains a campaignId for bulk sending
+        if (campaignId) {
+            // Fetch all users in the campaign
+            users = await User.find({ campaignId }, '_id emailId');
+        } else if (userId) {
+            // Fetch a single user by userId
+            const user = await User.findById(userId);
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+            users.push(user);
+        }
+
+        if (users.length === 0) {
+            return res.status(404).json({ message: 'No users found for this campaign' });
+        }
+
+        // Create an array of email promises
+        const emailPromises = users.map((user) => {
+            const emailId = user.emailId;
+            const userId = user._id;
+
+            // Dynamically construct the phishing link and tracking image URL using the userId
+            const imageUrl = `https://phishingmails.onrender.com/track.gif?userId=${userId}`;
+            const phishingLink = `https://phishingmails.onrender.com/incrementLinkOpenCount/${userId}`;
+
+            // Replace placeholders in the message with actual content
+            const htmlContent = message
+                .replace(/{{link}}/g, `<a href="${phishingLink}">${phishingLink}</a>`)
+                .replace(/{{trackingPixel}}/g, `<img src="${imageUrl}" alt="Tracking Pixel">`);
+
+            // Send email using the sendMail function
+            return sendMail(emailId, subject || "Phishing email", htmlContent);
+        });
+
+        // Use Promise.all to send all emails in parallel
+        await Promise.all(emailPromises);
 
         // Send a success response
-        res.status(200).json({ message: 'Email sent successfully' });
+        res.status(200).json({ message: 'Emails sent successfully' });
     } catch (error) {
-        // If an error occurs, send an error response
         console.error(error);
-        res.status(500).json({ message: 'Failed to send email' });
+        res.status(500).json({ message: 'Failed to send emails' });
     }
 });
+
+
+
+
 
 app.put('/accept-report/:userId', async (req, res) => {
     try {
@@ -366,15 +394,8 @@ app.put('/accept-report/:userId', async (req, res) => {
 app.get('/download-users-excel/:campaignNo', async (req, res) => {
     try {
         // Fetch all users from the database
-        const campaignNo = req.params.campaignNo;
-        let users;
-        if (campaignNo == "campaign1") {
-            users = await campaign1User.find();
-        } else if (campaignNo == "campaign2") {
-            users = await campaign2User.find();
-        } else {
-            users = await User.find();
-        }
+        const campaignId = req.params.campaignNo;
+        const users = await User.find({campaignId});
 
         // Create a new workbook and worksheet
         const workbook = new ExcelJS.Workbook();
@@ -404,7 +425,7 @@ app.get('/download-users-excel/:campaignNo', async (req, res) => {
                 attachmentOpenCount: user.attachmentOpenCount,
                 submittedData: user.submittedData,
                 reportedSpam: user.reportedSpam ? 'Yes' : 'No',
-                submittedContent: user.submittedContent.length > 0 && campaignNo === "campaign1" ?
+                submittedContent: user.submittedContent.length > 0 ?
                     `Usernames: ${user.submittedContent.map(data => data.username)} Passwords: ${user.submittedContent.map(data => data.password)},` :
                     (user.submittedContent.length > 0 ?
                         user.submittedContent.map(data => {
@@ -417,8 +438,6 @@ app.get('/download-users-excel/:campaignNo', async (req, res) => {
                     ),
                 UniqueLinkOpen: `https://svp-eci-indiagov.org/voterportal/${user._id}`,
                 UniqueImageOpen: `https://svp-eci-indiagov.org/track.gif?userId=${user._id}`,
-
-
             });
         });
 

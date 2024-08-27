@@ -10,40 +10,21 @@
 </head>
 
 <body class="bg-gray-100">
-    <nav class="bg-blue-900 text-white flex justify-between items-center p-4 shadow sticky top-0">
-        <div class="navbar-left flex flex-row">
-            <img src="/logo.jpg" alt="logo" style="width: 100px;">
-            <a href="/" id="analysisLink"
-                class="text-white hover:bg-blue-800 px-3 py-2 rounded-md text-sm font-medium">Analysis</a>
-            <a href="/reported" id="reportLink"
-                class="text-white hover:bg-blue-800 px-3 py-2 rounded-md text-sm font-medium">Reports</a>
-            <a href="/download-users-excel/campaign1" id="reportLink"
-                class="text-white hover:bg-blue-800 px-3 py-2 rounded-md text-sm font-medium">Campaign1 Stats</a>
-            <a href="/download-users-excel/campaign2" id="reportLink"
-                class="text-white hover:bg-blue-800 px-3 py-2 rounded-md text-sm font-medium">Campaign2 Stats</a>
-        </div>
-        <div class="navbar-right">
-            <button id="signOutBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md"
-                onclick="logout()">Sign
-                Out</button>
-        </div>
-    </nav>
+    <%- include('partials/navbar.ejs'); %>
+    
     <div class="max-w-3xl mx-auto bg-white rounded-lg shadow-md p-6 mt-12">
-        <div class="flex flex-row justify-between mb-8">
-            <h1 class="text-xl font-semibold mb-4">User Emails</h1>
+        <div class="flex flex-row justify-end mb-8">
             <div class="flex flex-row">
-                <form id="uploadForm" enctype="multipart/form-data">
-                    <p class="text-red-500">** Upload Excel with emails in first column **</p>
-                    <input type="file" name="file" accept=".xlsx, .xls">
-                    <button type="submit" class="bg-blue-500 hover:bg-blue-600 px-2 rounded text-white ">Upload</button>
-                </form>
+                <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+                    title="Create Users using Excel" onclick="openModal('uploadModal')">
+                    <i class="fa-solid fa-file-arrow-up"></i>
+                    Upload Excel
+                </button>
                 <!-- Button to open modal -->
-                <button onclick="openModal()"
-                    class="bg-blue-500 hover:bg-blue-600 text-white font-bold px-4 py-2 rounded mx-4 flex items-center"><i
-                        class="fa-solid fa-user-plus pr-2"></i>Add User</button>
-                <a href="/download-users-excel/campaign3"
-                    class="bg-blue-500 hover:bg-blue-600 text-white font-bold px-4 rounded flex items-center"> <i
-                        class="fas fa-file-excel mr-2"></i>Export to Excel</a>
+                <i class="fa-solid fa-user-plus bg-blue-500 hover:bg-blue-600 text-white font-bold p-2 rounded mx-4 flex items-center justify-center py-4"
+                    onclick="openModal('modal')" title="Add User"></i>
+                <i class="fa-regular fa-calendar-plus bg-blue-500 hover:bg-blue-600 text-white font-bold p-2 rounded flex items-center justify-center py-4"
+                    onclick="openModal('createCampaignModal')" title="Create Campaign"></i>
 
             </div>
         </div>
@@ -62,15 +43,93 @@
                     name="campaignDropdown"></select>
 
                 <button onclick="addUser()" class="bg-blue-500 text-white px-4 py-2 rounded">Add</button>
-                <button onclick="closeModal()" class="bg-gray-500 text-white px-4 py-2 rounded ml-2">Cancel</button>
+                <button onclick="closeModal('modal')"
+                    class="bg-gray-500 text-white px-4 py-2 rounded ml-2">Cancel</button>
             </div>
         </div>
-        <div class="overflow-x-auto">
-            <div class="flex flex-row items-center justify-between">
-                <h1 class="my-4 text-xl font-bold text-indigo-500 underline">Campaign users...</h1>
-                <select class="p-2 border border-2 border-green-400 outline-none rounded" id="campaignIdForFilterUsers"
-                    name="campaignDropdown" onchange="fetchUserEmails()" class="ml-auto"></select>
+
+        <div id="createCampaignModal" class="fixed top-0 left-0 w-full h-full bg-gray-800 bg-opacity-50 flex justify-center items-center hidden">
+            <div class="bg-white rounded-lg p-6">
+                <h2 class="text-2xl font-bold mb-4">Create Campaign</h2>
+                <input type="text" id="createCampaignName" class="w-full border rounded px-3 py-2 mb-4" placeholder="Campaign Name">
+        
+                <p id="campaignError" class="text-red-500"></p> <!-- Error message container -->
+        
+                <button onclick="submitCampaign()" class="bg-blue-500 text-white px-4 py-2 rounded">Create Campaign</button>
+                <button onclick="closeModal('createCampaignModal')" class="bg-gray-500 text-white px-4 py-2 rounded ml-2">Cancel</button>
             </div>
+        </div>
+        
+        <!-- Send Bulk Emails Modal -->
+        <div id="emailModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center">
+            <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-lg">
+                <h2 class="text-xl font-bold mb-4">Send Email</h2>
+                <form id="emailForm" class="space-y-4">
+                    <div>
+                        <label for="subject" class="block text-gray-700 font-semibold">Subject</label>
+                        <input type="text" id="subject" name="subject"
+                            class="w-full px-4 py-2 border rounded-lg focus:outline-none">
+                    </div>
+                    <div>
+                        <label for="message" class="block text-gray-700 font-semibold">Message</label>
+                        <textarea id="message" name="message" rows="4"
+                            class="w-full px-4 py-2 border rounded-lg focus:outline-none"></textarea>
+                    </div>
+                    <div class="text-center">
+                        <button type="submit" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md">
+                            Send
+                        </button>
+                        <button type="button" id="closeModalBtn"
+                            class="ml-4 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal for Create User using UploadFunction -->
+        <div id="uploadModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+            <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold">Upload Excel</h2>
+                </div>
+
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <p class="text-red-500 mb-4">** Upload Excel with emails in the first column **</p>
+                    <div class="mb-4">
+                        <label for="campaignIdForUpload" class="block text-gray-700 mb-2">Select Campaign</label>
+                        <select id="campaignIdForUpload" name="campaignDropdown"
+                            class="w-full border border-gray-300 rounded p-2" required>
+                            <!-- Campaign options will be populated here -->
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <input type="file" name="file" accept=".xlsx, .xls" class="w-full text-gray-600" required>
+                    </div>
+
+                    <div class="flex justify-end">
+                        <button type="button" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded mr-2"
+                            onclick="closeModal('uploadModal')">Cancel</button>
+                        <button type="submit"
+                            class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">Upload</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+
+        <div class="overflow-x-auto">
+            <div class="flex flex-row items-center justify-between my-4 w-full">
+                <div class="flex-grow flex flex-row justify-start items-center space-x-2 text-2xl text-indigo-500" id="campaignName">
+                    Campaign users...
+                </div>
+                <select class="p-2 border border-2 border-green-400 outline-none rounded ml-auto" 
+                    id="campaignIdForFilterUsers" name="campaignDropdown" onchange="fetchUserEmails()">
+                </select>
+            </div>
+            
 
             <p id="message" class=""></p>
             <table class="w-full table-auto">
@@ -95,12 +154,17 @@
 
     <script>
         // Function to fetch users' emails from the server
+        // Store the fetched users globally to make searching easier
+        let allUsers = [];
+
         async function fetchUserEmails() {
+            const campaignName = document.getElementById('campaignName');
             const campaignId = document.getElementById('campaignIdForFilterUsers').value;
             const userListBody = document.getElementById('userList');
 
             if (!campaignId) {
                 userListBody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-gray-500">Please select a campaign to see the list of emails.</td></tr>';
+                campaignName.innerText = 'Campaign Users...';
                 return;
             }
 
@@ -113,24 +177,85 @@
                 if (!response.ok) {
                     throw new Error(`Error: ${response.statusText}`);
                 }
-
                 const users = await response.json();
+                allUsers = users.users;
 
                 if (users.length === 0) {
-                    userListBody.innerHTML = 
+                    userListBody.innerHTML =
                         `<tr>
                             <td colspan="4" class="text-center py-4 text-gray-500">
                                 No users found for this campaign.
                             </td>
                         </tr>`;
                 } else {
-                    displayUsers(users);
+                    displayUsers(users.users);
+                    campaignName.innerHTML = `
+                            <p class="text-xl font-bold text-indigo-500 underline ">${users.campaignName}</p> 
+                            <input type="text" id="searchInput" class="border px-4 py-2 rounded w-full outline-none border border-2 border-green-400" placeholder="Search by email..." onkeyup="filterUsers()">
+                            <i id="bulkCampaignId" data-campaign-id="${campaignId}" onclick="openModal('emailModal')" class="fa-solid fa-paper-plane text-green-500 ps-4" title="Send Email"></i> 
+                            <a href="/download-users-excel/${campaignId}" class="px-4" title="Export Data in Excel">
+                                <i class="fas fa-file-excel text-green-500"></i>
+                            </a>
+                        `;
                 }
             } catch (error) {
                 console.error(error);
                 userListBody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-red-500">Failed to fetch emails. Please try again later.</td></tr>`;
             }
         }
+
+        // Function to filter users based on search input
+        function filterUsers() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+
+            // Filter users based on the search term (matching email)
+            const filteredUsers = allUsers.filter(user => 
+                user.emailId.toLowerCase().includes(searchTerm)
+            );
+
+            // Redisplay users with the filtered list
+            displayUsers(filteredUsers);
+        }
+
+
+        // Function to handle form submission
+        document.getElementById('emailForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const subject = document.getElementById('subject').value;
+            const message = document.getElementById('message').value;
+            const bulkCampaignId = document.getElementById('bulkCampaignId');
+            const campaignId = bulkCampaignId.getAttribute('data-campaign-id');
+
+            try {
+                // Send bulk emails by calling the send-email route
+                const response = await fetch('/send-email', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        campaignId, // Use the campaignId set when opening the modal
+                        subject,
+                        message
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert('Emails sent successfully!');
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error sending emails:', error);
+                alert('Failed to send emails.');
+            }
+
+            // Close the modal after sending the emails
+            closeModal('emailModal');
+        });
 
         async function fetchCampaigns(purpose) {
             try {
@@ -144,6 +269,8 @@
                     campaignDropdown = document.getElementById('campaignIdForCreateUser'); // Dropdown for creating user
                 } else if (purpose === 'filterUsers') {
                     campaignDropdown = document.getElementById('campaignIdForFilterUsers'); // Dropdown for filtering users
+                } else if (purpose === 'uploadUsers') {
+                    campaignDropdown = document.getElementById('campaignIdForUpload'); // Dropdown for upload users
                 }
 
                 // Clear the previous options (if any)
@@ -166,6 +293,44 @@
             }
         }
 
+        async function submitCampaign() {
+            const campaignName = document.getElementById('createCampaignName').value.trim();
+            const campaignError = document.getElementById('campaignError');
+            campaignError.textContent = ''; // Clear previous error messages
+
+            // Basic validation to check if the campaign name is provided
+            if (!campaignName) {
+                campaignError.textContent = 'Campaign name is required.';
+                return;
+            }
+
+            try {
+                const response = await fetch('/createCampaign', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name: campaignName }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Success: Handle the created campaign (e.g., display a success message or refresh the list)
+                    alert('Campaign created successfully!');
+                    closeModal('createCampaignModal');
+                    // Optionally, refresh the list of campaigns or reset the form
+                    document.getElementById('createCampaignName').value = '';
+                } else {
+                    // Error: Display the error message from the server
+                    campaignError.textContent = data.message || 'An error occurred.';
+                }
+            } catch (error) {
+                // Handle network or other errors
+                console.error('Error creating campaign:', error);
+                campaignError.textContent = 'An unexpected error occurred.';
+            }
+        }
 
         // Function to display users on the screen
         function displayUsers(users) {
@@ -175,12 +340,15 @@
             // Loop through each user
             users.forEach((user, index) => {
                 const row = document.createElement('tr');
+                row.setAttribute('data-user-id', user._id);
+                row.onclick = () => viewUserDetails(user._id);
+                row.classList.add("cursor-pointer")
                 row.innerHTML = `
             <td class="border px-4 py-2">${index + 1}</td>
             <td class="border px-4 py-2">${user._id}</td>
             <td class="border px-4 py-2">${user.emailId}</td>
             <td class="border px-4 py-2 flex flex-row justify-center">
-                <button class="${user.reportedSpam ? " bg-red-500 hover:bg-red-700" : "bg-green-500 hover:bg-green-700"} text-wrap text-white font-bold py-2 px-4 rounded mr-2" onclick="handleAction('${user._id}', '${user.reportedSpam ? 'false' : 'true'}')">
+                <button class="${user.reportedSpam ? " bg-red-500 hover:bg-red-700" : "bg-green-500 hover:bg-green-700"} text-wrap text-white font-bold py-2 px-4 rounded mr-2" onclick="handleAction('${user._id}', '${user.reportedSpam ? 'false' : 'true'}'); event.stopPropagation();">
                     ${user.reportedSpam ? '<i class="fa-regular fa-circle-xmark mr-2" ></i>No' : '<i class="fa-solid fa-check mr-2"></i> Yes'}
                 </button>
             </td>
@@ -188,6 +356,12 @@
                 userListBody.appendChild(row);
             });
         }
+
+        function viewUserDetails(userId) {
+            const url = `/user/viewDetails/${userId}`;
+            window.location.href = url;
+        }
+
 
         // Function to handle accept action
         async function handleAction(userId, action) {
@@ -215,13 +389,30 @@
             fetchCampaigns('filterUsers');
         };
 
-        function openModal() {
-            document.getElementById('modal').classList.remove('hidden');
-            fetchCampaigns("createUser");
+        function openModal(modalType) {
+            if (modalType === 'modal') {
+                fetchCampaigns("createUser");
+                document.getElementById('modal').classList.remove('hidden');
+            } else if (modalType === 'uploadModal') {
+                fetchCampaigns("uploadUsers");
+                document.getElementById('uploadModal').classList.remove('hidden');
+            } else if (modalType === 'createCampaignModal') {
+                document.getElementById('createCampaignModal').classList.remove('hidden');
+            } else if (modalType === 'emailModal') {
+                document.getElementById('emailModal').classList.remove('hidden');
+            }
         }
 
-        function closeModal() {
-            document.getElementById('modal').classList.add('hidden');
+        function closeModal(modalType) {
+            if (modalType === 'modal') {
+                document.getElementById('modal').classList.add('hidden');
+            } else if (modalType === 'uploadModal') {
+                document.getElementById('uploadModal').classList.add('hidden');
+            } else if (modalType === 'createCampaignModal') {
+                document.getElementById('createCampaignModal').classList.add('hidden');
+            } else if (modalType === 'emailModal') {
+                document.getElementById('emailModal').classList.add('hidden');
+            }
         }
 
         function clearMessageAfterDelay(delay = 5000) {
@@ -254,7 +445,7 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    closeModal();
+                    closeModal('modal');
                     messageToSend.classList.add("text-green-500");
                     messageToSend.innerHTML = "User added successfully";
                     fetchUserEmails(); // Refresh the user list after adding a user
@@ -274,10 +465,24 @@
         document.getElementById('uploadForm').addEventListener('submit', async (event) => {
             event.preventDefault(); // Prevent default form submission
 
+            const fileInput = event.target.file.files[0];
+            const campaignId = document.getElementById('campaignIdForUpload').value;
+
+            if (!fileInput || !campaignId) {
+                alert('Please select a file and campaign.');
+                return;
+            }
+
             const formData = new FormData();
-            formData.append('file', event.target.file.files[0]);
+            formData.append('file', fileInput);
+            formData.append('campaignId', campaignId); // Add campaignId to FormData
 
             try {
+                // Log FormData contents for debugging
+                for (const [key, value] of formData.entries()) {
+                    console.log(`${key}: ${value}`);
+                }
+
                 const response = await fetch('/upload', {
                     method: 'POST',
                     body: formData
@@ -287,6 +492,7 @@
                     const data = await response.json();
                     alert(data.message);
                     console.log(data.users); // Log the created users to the console
+                    closeModal('uploadModal'); // Close modal on success
                 } else {
                     alert('Failed to upload file');
                 }
@@ -297,7 +503,7 @@
         });
 
     </script>
-    <script src="isSignin.js"></script>
+    <script src="../isSignin.js"></script>
 </body>
 
 </html>
