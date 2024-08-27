@@ -1,13 +1,14 @@
 const connectToMongo = require('./db')
 const express = require('express')
 const bodyParser = require('body-parser');
-const campaign1User = require('./models/User');
-const campaign2User = require('./models/campaign2');
-const User = require('./models/campaign3');
+// const campaign1User = require('./models/User');
+// const campaign2User = require('./models/campaign2');
+const User = require('./models/User');
 const sendMail = require('./utils/sendMail');
 const path = require('path')
 const ExcelJS = require('exceljs');
 const { signinPage, createUser, login, getUser } = require("./controllers/signin");
+const { createCampaign, getAllCampaigns } = require("./controllers/CampaignInfo");
 const fetchuser = require('./middleware/fetchuser');
 const XLSX = require('xlsx');
 const multer = require('multer');
@@ -41,6 +42,13 @@ const upload = multer({ dest: 'uploads/' }); // Define upload directory
 // Define route for uploading Excel file
 app.post('/upload', upload.single('file'), async (req, res) => {
     try {
+        const { campaignId } = req.body; // Extract campaignId from request body
+
+        if (!campaignId) {
+            return res.status(400).json({ message: 'campaignId is required' });
+        }
+
+        // Read the Excel file
         const workbook = XLSX.readFile(req.file.path);
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
@@ -63,7 +71,15 @@ app.post('/upload', upload.single('file'), async (req, res) => {
             if (existingUser) {
                 return existingUser;
             }
-            return User.create({ emailId: email });
+            return User.create({ 
+                emailId: email,
+                campaignId, // Assign campaignId to each user
+                linkOpenCount: 0,
+                emailOpenCount: 0,
+                attachmentOpenCount: 0,
+                submittedData: 0,
+                reportedSpam: false 
+            });
         }));
 
         res.status(200).json({ message: 'Users created successfully', users });
@@ -73,10 +89,11 @@ app.post('/upload', upload.single('file'), async (req, res) => {
     }
 });
 
+
 app.post('/users', async (req, res) => {
     try {
         // Extract data from the request body
-        const emailId = req.body.emailId;
+        const { emailId, campaignId } = req.body;
 
         // Check if a user with the same emailId already exists
         const existingUser = await User.findOne({ emailId });
@@ -87,6 +104,7 @@ app.post('/users', async (req, res) => {
         // Create a new user object
         const newUser = new User({
             emailId,
+            campaignId,
             linkOpenCount: 0,
             emailOpenCount: 0,
             attachmentOpenCount: 0,
@@ -191,6 +209,7 @@ app.get('/users-emails', async (req, res) => {
 
 
 // Defined API endpoint to fetch aggregated user stats
+
 app.get('/aggregate-user-stats', async (req, res) => {
     try {
         // Aggregate data from all users
@@ -223,8 +242,6 @@ app.get('/aggregate-user-stats', async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 });
-
-
 
 // Route to handle tracking requests
 app.get('/track.gif', async (req, res) => {
@@ -321,7 +338,7 @@ app.put('/accept-report/:userId', async (req, res) => {
         const { action } = req.body;
 
         // Find the user by ID
-        const user = await User.findById(userId);
+        const user = await User.findById({_id: userId});
 
         // If user not found, return 404
         if (!user) {
@@ -424,6 +441,8 @@ app.post('/createuser', createUser)
 app.post('/login', login)
 app.get('/getuser', fetchuser, getUser)
 
+app.post('/createCampaign', createCampaign);
+app.get('/campaigns', getAllCampaigns);
 
 
 app.listen(port, () => {

@@ -23,7 +23,8 @@
                 class="text-white hover:bg-blue-800 px-3 py-2 rounded-md text-sm font-medium">Campaign2 Stats</a>
         </div>
         <div class="navbar-right">
-            <button id="signOutBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md"  onclick="logout()">Sign
+            <button id="signOutBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md"
+                onclick="logout()">Sign
                 Out</button>
         </div>
     </nav>
@@ -31,17 +32,19 @@
         <div class="flex flex-row justify-between mb-8">
             <h1 class="text-xl font-semibold mb-4">User Emails</h1>
             <div class="flex flex-row">
-                <form id="uploadForm" enctype="multipart/form-data" >
+                <form id="uploadForm" enctype="multipart/form-data">
                     <p class="text-red-500">** Upload Excel with emails in first column **</p>
                     <input type="file" name="file" accept=".xlsx, .xls">
                     <button type="submit" class="bg-blue-500 hover:bg-blue-600 px-2 rounded text-white ">Upload</button>
                 </form>
                 <!-- Button to open modal -->
-                <button onclick="openModal()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold px-4 py-2 rounded mx-4 flex items-center"><i class="fa-solid fa-user-plus pr-2"></i>Add User</button>
+                <button onclick="openModal()"
+                    class="bg-blue-500 hover:bg-blue-600 text-white font-bold px-4 py-2 rounded mx-4 flex items-center"><i
+                        class="fa-solid fa-user-plus pr-2"></i>Add User</button>
                 <a href="/download-users-excel/campaign3"
                     class="bg-blue-500 hover:bg-blue-600 text-white font-bold px-4 rounded flex items-center"> <i
                         class="fas fa-file-excel mr-2"></i>Export to Excel</a>
-                
+
             </div>
         </div>
 
@@ -49,15 +52,24 @@
         <div id="modal"
             class="fixed top-0 left-0 w-full h-full bg-gray-800 bg-opacity-50 flex justify-center items-center hidden">
             <div class="bg-white rounded-lg p-6">
+                <p class="bg-red-500" id="modalError"></p>
                 <h2 class="text-2xl font-bold mb-4">Add User</h2>
                 <input type="text" id="emailId" class="w-full border rounded px-3 py-2 mb-4"
                     placeholder="Email Address">
+
+                <!-- Dropdown for Campaign ID -->
+                <select id="campaignId" class="w-full border rounded px-3 py-2 mb-4">
+                    <option value="" disabled selected>Select Campaign</option>
+                    <!-- Options will be populated dynamically here -->
+                </select>
+
                 <button onclick="addUser()" class="bg-blue-500 text-white px-4 py-2 rounded">Add</button>
                 <button onclick="closeModal()" class="bg-gray-500 text-white px-4 py-2 rounded ml-2">Cancel</button>
             </div>
         </div>
         <div class="overflow-x-auto">
             <h1 class="my-4 text-xl font-bold text-indigo-500 underline">Third Campaign users...</h1>
+            <p id="message" class=""></p>
             <table class="w-full table-auto">
                 <thead>
                     <tr>
@@ -81,6 +93,24 @@
                 displayUsers(users);
             } catch (error) {
                 console.error(error);
+            }
+        }
+
+        async function fetchCampaigns() {
+            try {
+                const response = await fetch('/campaigns');
+                const campaigns = await response.json();
+
+                const campaignDropdown = document.getElementById('campaignId');
+
+                campaigns.forEach(campaign => {
+                    const option = document.createElement('option');
+                    option.value = campaign._id;
+                    option.textContent = campaign.name;
+                    campaignDropdown.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error fetching campaigns:', error);
             }
         }
 
@@ -132,29 +162,58 @@
 
         function openModal() {
             document.getElementById('modal').classList.remove('hidden');
+            fetchCampaigns();
         }
 
         function closeModal() {
             document.getElementById('modal').classList.add('hidden');
         }
 
+        function clearMessageAfterDelay(delay = 5000) {
+            setTimeout(() => {
+                const messageToSend = document.getElementById('message');
+                messageToSend.innerHTML = '';
+                messageToSend.classList.remove("text-green-500", "text-red-500");
+            }, delay); // delay in milliseconds (5000 ms = 5 seconds)
+        }
+
         async function addUser() {
             const emailId = document.getElementById('emailId').value;
-            const response = await fetch('/users', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ emailId })
-            });
-            const data = await response.json();
-            if (response.ok) {
-                alert(data.message);
-                closeModal();
-                fetchUserEmails();
-            } else {
-                alert(data.message);
+            const campaignId = document.getElementById('campaignId').value;
+            const messageToSend = document.getElementById('message');
+
+            if (!campaignId) {
+                document.getElementById('modalError').innerText = 'Please select a campaign';
+                return;
             }
+
+            try {
+                const response = await fetch('/users', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ emailId, campaignId })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    closeModal();
+                    messageToSend.classList.add("text-green-500");
+                    messageToSend.innerHTML = "User added successfully";
+                    fetchUserEmails(); // Refresh the user list after adding a user
+                } else {
+                    messageToSend.classList.add("text-red-500");
+                    messageToSend.innerHTML = data.message;
+                }
+            } catch (error) {
+                document.getElementById('modalError').innerText = 'Error adding user. Please try again.';
+                console.error('Error adding user:', error);
+            }
+
+            // Clear message after a few seconds
+            clearMessageAfterDelay();
         }
 
         document.getElementById('uploadForm').addEventListener('submit', async (event) => {

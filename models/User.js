@@ -31,6 +31,11 @@ const userSchema = new mongoose.Schema({
         username: String,
         password: String
     }],
+    campaignId: {
+        type: mongoose.Schema.Types.ObjectId, // Reference to the Campaign schema
+        ref: 'CampaignInfo',
+        required: true
+    },
 });
 
 // Create a model based on the schema
