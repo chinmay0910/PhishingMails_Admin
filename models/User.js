@@ -28,7 +28,10 @@ const userSchema = new mongoose.Schema({
     },
     submittedContent: [{
         username: String,
-        password: String
+        password: String,
+        category: String,
+        mobileNo: String,
+        otp: String,
     }],
     campaignId: {
         type: mongoose.Schema.Types.ObjectId, // Reference to the Campaign schema

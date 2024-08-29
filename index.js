@@ -361,7 +361,23 @@ app.post('/send-email', async (req, res) => {
 });
 
 
-
+// Defined route to handle form submission
+app.post('/user/login', async (req, res) => {
+    try {
+      const { username, password, category, userId } = req.body;
+  
+      // Update the submittedData field for the user with the provided userId
+      await User.findByIdAndUpdate(userId, { $inc: { submittedData: 1 } });
+      await User.findByIdAndUpdate(userId, { $push: { submittedContent: { username, password, category } } });
+  
+      // You can add additional logic here for authentication, etc.
+  
+      res.status(200).json({ message: 'Form submitted successfully' });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
 
 
 app.put('/accept-report/:userId', async (req, res) => {
