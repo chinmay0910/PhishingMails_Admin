@@ -1,4 +1,5 @@
 const connectToMongo = require('./db')
+const mongoose = require('mongoose');
 const express = require('express')
 const bodyParser = require('body-parser');
 // const campaign1User = require('./models/User');
@@ -14,6 +15,7 @@ const XLSX = require('xlsx');
 const multer = require('multer');
 const getGeolocation = require('./utils/getApproxLocation');
 const Campaign = require('./models/Campaign');
+const ObjectId = mongoose.Types.ObjectId;
 
 
 connectToMongo();
@@ -113,6 +115,28 @@ app.post('/upload', upload.single('file'), async (req, res) => {
 });
 
 
+
+app.post('/delete-users', async (req, res) => {
+    try {
+        // Extract userIds from the request body
+        const { userIds } = req.body;
+
+        // Validate the userIds input
+        if (!Array.isArray(userIds) || userIds.length === 0) {
+            return res.status(400).json({ success: false, message: 'No user IDs provided.' });
+        }
+
+        // Delete users with the specified IDs
+        await User.deleteMany({ _id: { $in: userIds } });
+
+        // Send a success response
+        res.json({ success: true, message: 'Users deleted successfully.' });
+    } catch (error) {
+        // Handle errors
+        console.error('Error deleting users:', error);
+        res.status(500).json({ success: false, message: 'Failed to delete users.' });
+    }
+});
 app.post('/users', async (req, res) => {
     try {
         // Extract data from the request body
@@ -253,10 +277,47 @@ app.get('/incrementLinkOpenCount/:userId', async (req, res) => {
 
 // Defined API endpoint to fetch aggregated user stats
 
-app.get('/aggregate-user-stats', async (req, res) => {
+// app.get('/aggregate-user-stats', async (req, res) => {
+//     try {
+//         // Aggregate data from all users
+//         const aggregateStats = await User.aggregate([
+//             {
+//                 $group: {
+//                     _id: null,
+//                     totalUsers: { $sum: 1 }, // Total number of users
+//                     totalLinkOpenCount: { $sum: { $cond: { if: { $gt: ['$linkOpenCount', 0] }, then: 1, else: 0 } } },
+//                     totalEmailOpenCount: { $sum: { $cond: { if: { $gt: ['$emailOpenCount', 0] }, then: 1, else: 0 } } },
+//                     totalAttachmentOpenCount: { $sum: { $cond: { if: { $gt: ['$attachmentOpenCount', 0] }, then: 1, else: 0 } } },
+//                     totalSubmittedData: { $sum: { $cond: { if: { $gt: ['$submittedData', 0] }, then: 1, else: 0 } } }
+//                 }
+//             }
+//         ]);
+
+//         // Extract aggregated data
+//         const { totalUsers, totalLinkOpenCount, totalEmailOpenCount, totalAttachmentOpenCount, totalSubmittedData } = aggregateStats[0];
+
+
+//         // Return the aggregated data as JSON
+//         res.json({ totalUsers, totalLinkOpenCount, totalEmailOpenCount, totalAttachmentOpenCount, totalSubmittedData });
+//     } catch (error) {
+//         // Handle errors
+//         console.error(error);
+//         res.status(500).json({ message: 'Internal server error' });
+//     }
+// });
+
+app.get('/aggregate-user-stats/:campaignId', async (req, res) => {
     try {
-        // Aggregate data from all users
+        const { campaignId } = req.params;
+
+        // Convert campaignId to ObjectId
+        const campaignObjectId = new ObjectId(campaignId);
+
+        // Aggregate data for the specific campaign
         const aggregateStats = await User.aggregate([
+            {
+                $match: { campaignId: campaignObjectId } // Filter by campaignId (ObjectId)
+            },
             {
                 $group: {
                     _id: null,
@@ -264,27 +325,29 @@ app.get('/aggregate-user-stats', async (req, res) => {
                     totalLinkOpenCount: { $sum: { $cond: { if: { $gt: ['$linkOpenCount', 0] }, then: 1, else: 0 } } },
                     totalEmailOpenCount: { $sum: { $cond: { if: { $gt: ['$emailOpenCount', 0] }, then: 1, else: 0 } } },
                     totalAttachmentOpenCount: { $sum: { $cond: { if: { $gt: ['$attachmentOpenCount', 0] }, then: 1, else: 0 } } },
-                    totalSubmittedData: { $sum: { $cond: { if: { $gt: ['$submittedData', 0] }, then: 1, else: 0 } } }
+                    totalSubmittedData: { $sum: { $cond: { if: { $gt: ['$submittedData', 0] }, then: 1, else: 0 } } },
+                    reportedSpamCount: { $sum: { $cond: { if: { $eq: ['$reportedSpam', true] }, then: 1, else: 0 } } }, // Count of users who reported spam
+                    notReportedSpamCount: { $sum: { $cond: { if: { $eq: ['$reportedSpam', false] }, then: 1, else: 0 } } } // Count of users who did not report spam
                 }
             }
         ]);
 
         // Extract aggregated data
-        const { totalUsers, totalLinkOpenCount, totalEmailOpenCount, totalAttachmentOpenCount, totalSubmittedData } = aggregateStats[0];
+        if (aggregateStats.length > 0) {
+            const { totalUsers, totalLinkOpenCount, totalEmailOpenCount, totalAttachmentOpenCount, totalSubmittedData, reportedSpamCount, notReportedSpamCount } = aggregateStats[0];
 
-        // Calculate percentages
-        const linkOpenPercentage = (totalLinkOpenCount / totalUsers) * 100;
-        const emailOpenPercentage = (totalEmailOpenCount / totalUsers) * 100;
-        const attachmentOpenPercentage = (totalAttachmentOpenCount / totalUsers) * 100;
-
-        // Return the aggregated data as JSON
-        res.json({ totalUsers, totalLinkOpenCount, totalEmailOpenCount, totalAttachmentOpenCount, totalSubmittedData });
+            // Return the aggregated data as JSON
+            res.json({ totalUsers, totalLinkOpenCount, totalEmailOpenCount, totalAttachmentOpenCount, totalSubmittedData, reportedSpamCount, notReportedSpamCount });
+        } else {
+            res.status(404).json({ message: 'No data found for the specified campaignId' });
+        }
     } catch (error) {
         // Handle errors
         console.error(error);
         res.status(500).json({ message: 'Internal server error' });
     }
 });
+
 
 // Route to handle tracking requests
 app.get('/track.gif', async (req, res) => {

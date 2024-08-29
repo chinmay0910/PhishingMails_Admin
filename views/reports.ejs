@@ -129,12 +129,19 @@
                     id="campaignIdForFilterUsers" name="campaignDropdown" onchange="fetchUserEmails()">
                 </select>
             </div>
-            
+             <!-- Add delete button -->
+    <div class="my-4">
+        <button class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded" onclick="deleteSelectedUsers()">Delete Selected</button>
+    </div>
 
             <p id="message" class=""></p>
             <table class="w-full table-auto">
                 <thead>
                     <tr>
+
+                        <th class="border px-4 py-2">
+                            <input type="checkbox" id="selectAll" onclick="toggleSelectAll()">
+                        </th>
                         <th class="border px-4 py-2">#</th>
                         <th class="border px-4 py-2">User ID</th>
                         <th class="border px-4 py-2">Email</th>
@@ -216,7 +223,44 @@
             // Redisplay users with the filtered list
             displayUsers(filteredUsers);
         }
+        function toggleSelectAll() {
+        const selectAllCheckbox = document.getElementById('selectAll');
+        const checkboxes = document.querySelectorAll('.row-select');
+        checkboxes.forEach(checkbox => checkbox.checked = selectAllCheckbox.checked);
+    }
 
+    function deleteSelectedUsers() {
+        const selectedCheckboxes = document.querySelectorAll('.row-select:checked');
+        const userIdsToDelete = Array.from(selectedCheckboxes).map(cb => cb.value);
+
+        if (userIdsToDelete.length === 0) {
+            alert('No users selected.');
+            return;
+        }
+
+        if (confirm(`Are you sure you want to delete ${userIdsToDelete.length} user(s)?`)) {
+            fetch('/delete-users', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ userIds: userIdsToDelete })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Users deleted successfully!');
+                    fetchUserEmails(); // Refresh the list
+                } else {
+                    alert('Error deleting users: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to delete users.');
+            });
+        }
+    }
 
         // Function to handle form submission
         document.getElementById('emailForm').addEventListener('submit', async function (e) {
@@ -344,6 +388,9 @@
                 row.onclick = () => viewUserDetails(user._id);
                 row.classList.add("cursor-pointer")
                 row.innerHTML = `
+                 <td class="border px-4 py-2">
+                    <input type="checkbox" class="row-select" value="${user._id}">
+                </td>
             <td class="border px-4 py-2">${index + 1}</td>
             <td class="border px-4 py-2">${user._id}</td>
             <td class="border px-4 py-2">${user.emailId}</td>
