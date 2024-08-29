@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Visualization</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts@latest/dist/apexcharts.maps.min.js"></script>
+</head>
+
+<body class="bg-gray-100">
+    <%- include('partials/navbar.ejs'); %>
+
+        <!-- Containers for radial bar charts --><!-- Container for charts -->
+        <div class="mx-auto p-2">
+            <!-- Grid for radial charts -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                <div id="radial-chart-1" class="border border-2 border-gray-500 rounded-md bg-white"></div>
+                <div id="radial-chart-2" class="border border-2 border-gray-500 rounded-md bg-white"></div>
+                <div id="radial-chart-3" class="border border-2 border-gray-500 rounded-md bg-white"></div>
+                <div id="radial-chart-4" class="border border-2 border-gray-500 rounded-md bg-white"></div>
+            </div>
+            <!-- Container for reported spam pie chart -->
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                <div id="reported-spam-chart" class="border border-2 border-gray-500 rounded-md bg-white"></div>
+                <div id="user-activity-chart" class="border border-2 border-gray-500 rounded-md bg-white"></div>
+                <div id="geo-distribution-chart" class="border border-2 border-gray-500 rounded-md bg-white"></div>
+            </div>
+
+        </div>
+
+        <!-- Import the script with type="module" -->
+        <script type="module" src="apexChartsCustom.js"></script>
+
+</html>

@@ -41,6 +41,9 @@ app.get('/user/viewDetails/:id', (req, res) => {
 app.get('/signinpage', (req, res) => {
     res.render('SigninPage.ejs')
 })
+app.get('/newVisualization', (req, res) => {
+    res.render('DataVisualizationNew.ejs')
+})
 app.get('/user/:id', async (req, res) => {
     try {
         const userId = req.params.id;
