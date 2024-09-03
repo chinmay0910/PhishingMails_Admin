@@ -44,6 +44,10 @@ const userSchema = new mongoose.Schema({
         region: String,
         city: String,
         coordinates: [Number] // [latitude, longitude]
+    }, 
+    Date: {
+        type: Date,
+        default: Date.now // Default value is the current date and time
     }
 });
 

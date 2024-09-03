@@ -363,17 +363,18 @@
             //         }
             //     });
             // });
-            
+           
 
-            import ApexCharts from './apexCharts.js'
 
-let radialChart1, radialChart2, radialChart3, radialChart4, reportedSpamChart;
+            import ApexCharts from './apexCharts.js';
+
+let radialChart1, radialChart2, radialChart3, radialChart4, reportedSpamChart, linechart, heatmapChart;
 
 async function populateCampaignDropdown() {
     try {
         const response = await fetch('/campaigns');
         const campaigns = await response.json();
-
+        
         const selectElement = document.getElementById('campaign-select');
         campaigns.forEach(campaign => {
             const option = document.createElement('option');
@@ -388,8 +389,21 @@ async function populateCampaignDropdown() {
 
 async function fetchCampaignData(campaignId) {
     try {
-        const response = await fetch(`/aggregate-user-stats/${campaignId}`);
-        return await response.json();
+        const [aggregateStatsResponse, userActivityResponse, heatmapResponse] = await Promise.all([
+            fetch(`/aggregate-user-stats/${campaignId}`),
+            fetch(`/useractivity/${campaignId}`),
+            fetch(`/submissions-heatmap/${campaignId}`)
+        ]);
+
+        const aggregateStats = await aggregateStatsResponse.json();
+        const userActivityData = await userActivityResponse.json();
+        const heatmapData = await heatmapResponse.json();
+
+        return {
+            aggregateStats,
+            userActivityData,
+            heatmapData
+        };
     } catch (error) {
         console.error('Error fetching campaign data:', error);
     }
@@ -402,9 +416,7 @@ function clearChartContainer(containerId) {
 
 function destroyChart(chartInstance, chartName) {
     if (chartInstance) {
-        
         chartInstance.destroy();
-       
     }
 }
 
@@ -437,7 +449,7 @@ function createReportedSpamChart(containerId, reportedCount, notReportedCount) {
         },
         dataLabels: {
             enabled: true,
-           formatter: (val) => `${val.toFixed(2)}%`
+            formatter: (val) => `${val.toFixed(2)}%`
         },
         legend: {
             position: 'bottom'
@@ -452,7 +464,7 @@ function createSemiCircleRadialBar(containerId, total, opened, color, label, cha
     destroyChart(chartInstanceVar, chartName);
     clearChartContainer(containerId); // Clear container before creating a new chart
 
-    const percentage = (opened / total) * 100;
+    const percentage = (total > 0) ? (opened / total) * 100 : 0;
     const detailedLabel = `${opened} / ${total}`;
 
     const options = {
@@ -506,14 +518,101 @@ function createSemiCircleRadialBar(containerId, total, opened, color, label, cha
     return chart;
 }
 
-function updateVisualizations(data) {
-    radialChart1 = createSemiCircleRadialBar('radial-chart-1', data.totalUsers, data.totalEmailOpenCount, '#FF4560', 'Email Open Count', radialChart1, 'Radial 1');
-    radialChart2 = createSemiCircleRadialBar('radial-chart-2', data.totalUsers, data.totalLinkOpenCount, '#00E396', 'Link Open Count', radialChart2, 'Radial 2');
-    radialChart3 = createSemiCircleRadialBar('radial-chart-3', data.totalUsers, data.totalAttachmentOpenCount, '#FF4560', 'Attachment Open Count', radialChart3, 'Radial 3');
-    radialChart4 = createSemiCircleRadialBar('radial-chart-4', data.totalUsers, data.totalSubmittedData, '#00E396', 'Submitted Data Count', radialChart4, 'Radial 4');
-    createReportedSpamChart('reported-spam-chart', data.reportedSpamCount, data.notReportedSpamCount);
+function createLineChart(containerId, seriesData, xAxisCategories, chartTitle) {
+    destroyChart(linechart, "line chart");
+    clearChartContainer(containerId);
 
-    // Example for Line Chart and Geo Distribution Chart can be added similarly based on your data
+    const options = {
+        chart: {
+            type: 'line',
+            height: 350
+        },
+        series: seriesData,
+        xaxis: {
+            categories: xAxisCategories,
+            labels: {
+                formatter: function (value) {
+                    const date = new Date(value);
+                    return date.toLocaleDateString(); // Format the date labels
+                }
+            }
+        },
+        title: {
+            text: chartTitle
+        },
+        dataLabels: {
+            enabled: true
+        },
+        stroke: {
+            curve: 'smooth'
+        },
+        grid: {
+            borderColor: '#e0e0e0'
+        },
+        markers: {
+            size: 4
+        },
+        legend: {
+            position: 'top'
+        }
+    };
+
+    linechart = new ApexCharts(document.querySelector(`#${containerId}`), options);
+    linechart.render();
+}
+
+function createHeatmapChart(containerId, data) {
+    destroyChart(heatmapChart, 'Heatmap');
+    clearChartContainer(containerId);
+
+    const options = {
+        chart: {
+            type: 'heatmap',
+            height: 350
+        },
+        dataLabels: {
+            enabled: true
+        },
+        series: [{
+            name: 'Submissions',
+            data: data
+        }],
+        xaxis: {
+            type: 'category',
+            labels: {
+                rotate: -45
+            }
+        },
+        yaxis: {
+            title: {
+                text: 'Number of Submissions'
+            }
+        },
+        title: {
+            text: 'User Submissions Heatmap'
+        },
+        colors: ['#00E396']
+    };
+
+    heatmapChart = new ApexCharts(document.querySelector(`#${containerId}`), options);
+    heatmapChart.render();
+}
+
+function updateVisualizations(data) {
+    const { aggregateStats, userActivityData, heatmapData } = data;
+
+    // Update radial charts
+    radialChart1 = createSemiCircleRadialBar('radial-chart-1', aggregateStats.totalUsers, aggregateStats.totalEmailOpenCount, '#FF4560', 'Email Open Count', radialChart1, 'Radial 1');
+    radialChart2 = createSemiCircleRadialBar('radial-chart-2', aggregateStats.totalUsers, aggregateStats.totalLinkOpenCount, '#00E396', 'Link Open Count', radialChart2, 'Radial 2');
+    radialChart3 = createSemiCircleRadialBar('radial-chart-3', aggregateStats.totalUsers, aggregateStats.totalAttachmentOpenCount, '#FF4560', 'Attachment Open Count', radialChart3, 'Radial 3');
+    radialChart4 = createSemiCircleRadialBar('radial-chart-4', aggregateStats.totalUsers, aggregateStats.totalSubmittedData, '#00E396', 'Submitted Data Count', radialChart4, 'Radial 4');
+    createReportedSpamChart('reported-spam-chart', aggregateStats.reportedSpamCount, aggregateStats.notReportedSpamCount);
+
+    // Update line chart
+    createLineChart('user-activity-chart', userActivityData.seriesData, userActivityData.xAxisCategories, 'User Activity Over Time');
+
+    // Update heatmap chart
+    createHeatmapChart('heatmap-chart', heatmapData);
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -523,7 +622,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const campaignId = event.target.value;
         if (campaignId) {
             const data = await fetchCampaignData(campaignId);
-            updateVisualizations(data);
+            if (data) {
+                updateVisualizations(data);
+            } else {
+                console.error('No data received for campaign:', campaignId);
+            }
         }
     });
 });
