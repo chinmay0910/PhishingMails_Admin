@@ -1,4 +1,5 @@
 const connectToMongo = require('./db')
+const mongoose = require('mongoose');
 const express = require('express')
 const bodyParser = require('body-parser');
 // const campaign1User = require('./models/User');
@@ -14,6 +15,7 @@ const XLSX = require('xlsx');
 const multer = require('multer');
 const getGeolocation = require('./utils/getApproxLocation');
 const Campaign = require('./models/Campaign');
+const ObjectId = mongoose.Types.ObjectId;
 
 
 connectToMongo();
@@ -113,10 +115,58 @@ app.post('/upload', upload.single('file'), async (req, res) => {
 });
 
 
+
+app.post('/delete-users', async (req, res) => {
+    try {
+        // Extract userIds from the request body
+        const { userIds } = req.body;
+
+        // Validate the userIds input
+        if (!Array.isArray(userIds) || userIds.length === 0) {
+            return res.status(400).json({ success: false, message: 'No user IDs provided.' });
+        }
+
+        // Delete users with the specified IDs
+        await User.deleteMany({ _id: { $in: userIds } });
+
+        // Send a success response
+        res.json({ success: true, message: 'Users deleted successfully.' });
+    } catch (error) {
+        // Handle errors
+        console.error('Error deleting users:', error);
+        res.status(500).json({ success: false, message: 'Failed to delete users.' });
+    }
+});
+
+
+// Assuming you have a User model
+app.get('/user/:id', async (req, res) => {
+    try {
+        // Extract user ID from the request parameters
+        const userId = req.params.id;
+
+        // Find the user by ID
+        const user = await User.findById(userId);
+
+        // If user does not exist, return a 404 error
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Return the user's email
+        res.status(200).json({ emailId: user.emailId });
+    } catch (error) {
+        // Handle any errors
+        console.error('Error fetching user:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
 app.post('/users', async (req, res) => {
     try {
         // Extract data from the request body
         const { emailId, campaignId } = req.body;
+    
 
         // Check if a user with the same emailId already exists
         const existingUser = await User.findOne({ emailId, campaignId });
@@ -192,6 +242,7 @@ app.get('/incrementLinkOpenCount/:userId', async (req, res) => {
 
         // Increment the linkOpenCount
         user.linkOpenCount += 1;
+        user.Date = Date.now();
         const location = getGeolocation(ipAddress);
         user.ipAddress = ipAddress;
         user.location = location ? location : {};
@@ -253,10 +304,47 @@ app.get('/incrementLinkOpenCount/:userId', async (req, res) => {
 
 // Defined API endpoint to fetch aggregated user stats
 
-app.get('/aggregate-user-stats', async (req, res) => {
+// app.get('/aggregate-user-stats', async (req, res) => {
+//     try {
+//         // Aggregate data from all users
+//         const aggregateStats = await User.aggregate([
+//             {
+//                 $group: {
+//                     _id: null,
+//                     totalUsers: { $sum: 1 }, // Total number of users
+//                     totalLinkOpenCount: { $sum: { $cond: { if: { $gt: ['$linkOpenCount', 0] }, then: 1, else: 0 } } },
+//                     totalEmailOpenCount: { $sum: { $cond: { if: { $gt: ['$emailOpenCount', 0] }, then: 1, else: 0 } } },
+//                     totalAttachmentOpenCount: { $sum: { $cond: { if: { $gt: ['$attachmentOpenCount', 0] }, then: 1, else: 0 } } },
+//                     totalSubmittedData: { $sum: { $cond: { if: { $gt: ['$submittedData', 0] }, then: 1, else: 0 } } }
+//                 }
+//             }
+//         ]);
+
+//         // Extract aggregated data
+//         const { totalUsers, totalLinkOpenCount, totalEmailOpenCount, totalAttachmentOpenCount, totalSubmittedData } = aggregateStats[0];
+
+
+//         // Return the aggregated data as JSON
+//         res.json({ totalUsers, totalLinkOpenCount, totalEmailOpenCount, totalAttachmentOpenCount, totalSubmittedData });
+//     } catch (error) {
+//         // Handle errors
+//         console.error(error);
+//         res.status(500).json({ message: 'Internal server error' });
+//     }
+// });
+
+app.get('/aggregate-user-stats/:campaignId', async (req, res) => {
     try {
-        // Aggregate data from all users
+        const { campaignId } = req.params;
+
+        // Convert campaignId to ObjectId
+        const campaignObjectId = new ObjectId(campaignId);
+
+        // Aggregate data for the specific campaign
         const aggregateStats = await User.aggregate([
+            {
+                $match: { campaignId: campaignObjectId } // Filter by campaignId (ObjectId)
+            },
             {
                 $group: {
                     _id: null,
@@ -264,27 +352,29 @@ app.get('/aggregate-user-stats', async (req, res) => {
                     totalLinkOpenCount: { $sum: { $cond: { if: { $gt: ['$linkOpenCount', 0] }, then: 1, else: 0 } } },
                     totalEmailOpenCount: { $sum: { $cond: { if: { $gt: ['$emailOpenCount', 0] }, then: 1, else: 0 } } },
                     totalAttachmentOpenCount: { $sum: { $cond: { if: { $gt: ['$attachmentOpenCount', 0] }, then: 1, else: 0 } } },
-                    totalSubmittedData: { $sum: { $cond: { if: { $gt: ['$submittedData', 0] }, then: 1, else: 0 } } }
+                    totalSubmittedData: { $sum: { $cond: { if: { $gt: ['$submittedData', 0] }, then: 1, else: 0 } } },
+                    reportedSpamCount: { $sum: { $cond: { if: { $eq: ['$reportedSpam', true] }, then: 1, else: 0 } } }, // Count of users who reported spam
+                    notReportedSpamCount: { $sum: { $cond: { if: { $eq: ['$reportedSpam', false] }, then: 1, else: 0 } } } // Count of users who did not report spam
                 }
             }
         ]);
 
         // Extract aggregated data
-        const { totalUsers, totalLinkOpenCount, totalEmailOpenCount, totalAttachmentOpenCount, totalSubmittedData } = aggregateStats[0];
+        if (aggregateStats.length > 0) {
+            const { totalUsers, totalLinkOpenCount, totalEmailOpenCount, totalAttachmentOpenCount, totalSubmittedData, reportedSpamCount, notReportedSpamCount } = aggregateStats[0];
 
-        // Calculate percentages
-        const linkOpenPercentage = (totalLinkOpenCount / totalUsers) * 100;
-        const emailOpenPercentage = (totalEmailOpenCount / totalUsers) * 100;
-        const attachmentOpenPercentage = (totalAttachmentOpenCount / totalUsers) * 100;
-
-        // Return the aggregated data as JSON
-        res.json({ totalUsers, totalLinkOpenCount, totalEmailOpenCount, totalAttachmentOpenCount, totalSubmittedData });
+            // Return the aggregated data as JSON
+            res.json({ totalUsers, totalLinkOpenCount, totalEmailOpenCount, totalAttachmentOpenCount, totalSubmittedData, reportedSpamCount, notReportedSpamCount });
+        } else {
+            res.status(404).json({ message: 'No data found for the specified campaignId' });
+        }
     } catch (error) {
         // Handle errors
         console.error(error);
         res.status(500).json({ message: 'Internal server error' });
     }
 });
+
 
 // Route to handle tracking requests
 app.get('/track.gif', async (req, res) => {
@@ -295,6 +385,7 @@ app.get('/track.gif', async (req, res) => {
         const user = await User.findById(userId);
         if (user) {
             user.emailOpenCount += 1;
+            user.Date = Date.now();
             await user.save();
         }
 
@@ -360,6 +451,42 @@ app.post('/send-email', async (req, res) => {
     }
 });
 
+app.put('/edit/:id', async (req, res) => {
+    try {
+        // Extract user ID from the request parameters
+        const userId = req.params.id;
+console.log(userId);
+        // Extract the emailId from the request body
+        const { emailId } = req.body;
+
+        // Find the user by ID
+        const user = await User.findById(userId);
+
+        // If user does not exist, return an error response
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Check if the new emailId already exists for the same campaign
+        const existingUser = await User.findOne({ emailId, campaignId: user.campaignId });
+        if (existingUser && existingUser._id.toString() !== userId) {
+            return res.status(400).json({ message: 'Another user already exists with this email in the same campaign' });
+        }
+
+        // Update the user's emailId
+        user.emailId = emailId;
+
+        // Save the updated user to the database
+        await user.save();
+
+        // Send a success response
+        res.status(200).json({ message: 'User updated successfully', user });
+    } catch (error) {
+        // If an error occurs, send an error response
+        console.error(error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
 
 // Defined route to handle form submission
 app.post('/user/login', async (req, res) => {
@@ -472,6 +599,109 @@ app.get('/download-users-excel/:campaignNo', async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+app.get('/useractivity/:campaignId', async (req, res) => {
+    try {
+        const { campaignId } = req.params;
+
+        // Convert campaignId to ObjectId
+        const campaignObjectId = new ObjectId(campaignId);
+
+        // Fetch the required data from the User collection filtered by campaignId
+        const users = await User.aggregate([
+            {
+                $match: { campaignId: campaignObjectId } // Filter by campaignId (ObjectId)
+            },
+            {
+                $group: {
+                    _id: { 
+                        date: { 
+                            $dateToString: { format: "%Y-%m-%d", date: "$Date" } 
+                        }
+                    },
+                    emailOpenCount: { $sum: "$emailOpenCount" },
+                    linkOpenCount: { $sum: "$linkOpenCount" }
+                }
+            },
+            {
+                $sort: { "_id.date": 1 }
+            }
+        ]);
+
+        // Filter out any null or undefined dates
+        const filteredUsers = users.filter(user => user._id.date !== null && user._id.date !== undefined);
+
+        // Format the data for the chart
+        const seriesData = [
+            {
+                name: 'Email Open Count',
+                data: filteredUsers.map(user => user.emailOpenCount)
+            },
+            {
+                name: 'Link Open Count',
+                data: filteredUsers.map(user => user.linkOpenCount)
+            }
+        ];
+
+        const xAxisCategories = filteredUsers.map(user => user._id.date);
+
+        // Send the data as a response
+        res.json({
+            seriesData,
+            xAxisCategories
+        });
+    } catch (error) {
+        console.error('Error fetching user activity data:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+
+app.get('/submissions-heatmap/:campaignId', async (req, res) => {
+    try {
+        const { campaignId } = req.params;
+        const campaignObjectId = new ObjectId(campaignId);
+
+        // Aggregate submissions count by day for the specific campaign
+        const data = await User.aggregate([
+            { $match: { campaignId: campaignObjectId } }, // Filter by campaign ID
+            {
+                $group: {
+                    _id: {
+                        year: { $year: "$Date" },
+                        month: { $month: "$Date" },
+                        day: { $dayOfMonth: "$Date" }
+                    },
+                    submissionsCount: { $sum: "$submittedData" }
+                }
+            },
+            {
+                $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1 }
+            }
+        ]);
+
+        // Format data for heatmap with null checks and remove invalid entries
+        const formattedData = data.map(item => {
+            // Check if _id and its subfields are not null or undefined
+            if (item._id && item._id.year !== undefined && item._id.month !== undefined && item._id.day !== undefined) {
+                const formattedDate = `${item._id.year}-${String(item._id.month).padStart(2, '0')}-${String(item._id.day).padStart(2, '0')}`;
+                return {
+                    x: formattedDate,
+                    y: item.submissionsCount || 0 // Default value if submissionsCount is null
+                };
+            } else {
+                // Log unexpected data format
+                console.warn('Unexpected data format:', item);
+                return null;
+            }
+        }).filter(item => item !== null && item.x !== 'null-null-null'); // Remove null and invalid entries
+
+        res.json(formattedData);
+    } catch (error) {
+        console.error('Error fetching heatmap data:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 

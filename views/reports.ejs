@@ -48,6 +48,21 @@
             </div>
         </div>
 
+        <!--  edit Modal -->
+    <div id="editmodal"
+        class="fixed top-0 left-0 w-full h-full bg-gray-800 bg-opacity-50 flex justify-center items-center hidden">
+        <div class="bg-white rounded-lg p-6">
+            <p class="bg-red-500" id="modalError"></p>
+            <h2 class="text-2xl font-bold mb-4">Edit User</h2>
+            <input type="text" id="emailId1" class="w-full border rounded px-3 py-2 mb-4"
+                placeholder="Email Address">
+
+            <button onclick="editUser()" class="bg-blue-500 text-white px-4 py-2 rounded">Save</button>
+            <button onclick="closeEditModal('editmodal')"
+                class="bg-gray-500 text-white px-4 py-2 rounded ml-2">Cancel</button>
+        </div>
+    </div>
+
         <div id="createCampaignModal" class="fixed top-0 left-0 w-full h-full bg-gray-800 bg-opacity-50 flex justify-center items-center hidden">
             <div class="bg-white rounded-lg p-6">
                 <h2 class="text-2xl font-bold mb-4">Create Campaign</h2>
@@ -135,10 +150,14 @@
             <table class="w-full table-auto">
                 <thead>
                     <tr>
+                        <th class="border px-4 py-2">
+                            <input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)">
+                        </th>
                         <th class="border px-4 py-2">#</th>
                         <th class="border px-4 py-2">User ID</th>
                         <th class="border px-4 py-2">Email</th>
                         <th class="border px-4 py-2">Reported Spam</th>
+                        <th class="border px-4 py-2">Edit</th>
                     </tr>
                 </thead>
                 <tbody id="userList">
@@ -149,6 +168,7 @@
                     </tr>
                 </tbody>
             </table>
+            <button onclick="deleteSelectedUsers()" class="bg-red-500 text-white px-4 py-2 rounded">Delete Selected</button>
         </div>
     </div>
 
@@ -156,7 +176,11 @@
         // Function to fetch users' emails from the server
         // Store the fetched users globally to make searching easier
         let allUsers = [];
-
+        function toggleSelectAll(source) {
+            const checkboxes = document.querySelectorAll('tbody input[type="checkbox"]');
+            checkboxes.forEach(checkbox => checkbox.checked = source.checked);
+        }
+        
         async function fetchUserEmails() {
             const campaignName = document.getElementById('campaignName');
             const campaignId = document.getElementById('campaignIdForFilterUsers').value;
@@ -344,6 +368,9 @@
                 row.onclick = () => viewUserDetails(user._id);
                 row.classList.add("cursor-pointer")
                 row.innerHTML = `
+                <td class="border px-4 py-2">
+                        <input type="checkbox" class="user-checkbox" value="${user._id}" onclick="event.stopPropagation();">
+                    </td>
             <td class="border px-4 py-2">${index + 1}</td>
             <td class="border px-4 py-2">${user._id}</td>
             <td class="border px-4 py-2">${user.emailId}</td>
@@ -352,6 +379,9 @@
                     ${user.reportedSpam ? '<i class="fa-regular fa-circle-xmark mr-2" ></i>No' : '<i class="fa-solid fa-check mr-2"></i> Yes'}
                 </button>
             </td>
+            <td class="border px-4 py-2">
+        <button class="bg-blue-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded" onclick="openEditModal('editmodal', '${user._id}'); event.stopPropagation();">Edit</button>
+    </td>
         `;
                 userListBody.appendChild(row);
             });
@@ -361,7 +391,42 @@
             const url = `/user/viewDetails/${userId}`;
             window.location.href = url;
         }
-
+        async function deleteSelectedUsers() {
+            const selectedCheckboxes = document.querySelectorAll('tbody input.user-checkbox:checked');
+            const userIds = Array.from(selectedCheckboxes).map(checkbox => checkbox.value);
+        
+            if (userIds.length === 0) {
+                alert('No users selected.');
+                return;
+            }
+        
+            if (!confirm('Are you sure you want to delete the selected users?')) {
+                return;
+            }
+        
+            try {
+                const response = await fetch('/delete-users', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ userIds })
+                });
+        
+                const data = await response.json();
+        
+                if (response.ok) {
+                    alert('Users deleted successfully.');
+                    fetchUserEmails(); // Refresh the user list after deletion
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error deleting users:', error);
+                alert('Failed to delete users.');
+            }
+        }
+        
 
         // Function to handle accept action
         async function handleAction(userId, action) {
@@ -401,6 +466,9 @@
             } else if (modalType === 'emailModal') {
                 document.getElementById('emailModal').classList.remove('hidden');
             }
+            else if (modalType === 'editmodal') {
+                document.getElementById('editmodal').classList.remove('hidden');
+            }
         }
 
         function closeModal(modalType) {
@@ -413,7 +481,54 @@
             } else if (modalType === 'emailModal') {
                 document.getElementById('emailModal').classList.add('hidden');
             }
+            else if (modalType === 'editmodal') {
+                document.getElementById('editmodal').classList.add('hidden');
+            }
         }
+
+        let currentUserId = null; // Global variable to store userId
+
+ async function openEditModal(modalId, userId) {
+    const modal = document.getElementById(modalId);
+    modal.classList.remove('hidden');
+
+
+    
+    // Store the userId in the global variable
+    currentUserId = userId;
+
+
+    try {
+        // Fetch the user data from the server
+        const response = await fetch(`/user/${userId}`); // Adjust the endpoint as necessary
+        const data = await response.json();
+
+        if (response.ok) {
+            // Populate the email field with the fetched email
+            document.getElementById('emailId1').value = data.emailId;
+        } else {
+            console.error('Failed to fetch user data:', data.message);
+            document.getElementById('modalError').innerText = 'Failed to load user data.';
+        }
+    } catch (error) {
+        console.error('Error fetching user data:', error);
+        document.getElementById('modalError').innerText = 'Error fetching user data. Please try again.';
+    }
+
+
+    // Optionally, populate the modal fields with user data if needed
+    // Example: document.getElementById('emailId').value = fetchedUserEmail;
+}
+
+function closeEditModal(modalId) {
+    const modal = document.getElementById(modalId);
+    modal.classList.add('hidden');
+
+    // Clear the userId when closing the modal
+    currentUserId = null;
+}
+
+
 
         function clearMessageAfterDelay(delay = 5000) {
             setTimeout(() => {
@@ -461,6 +576,45 @@
             // Clear message after a few seconds
             clearMessageAfterDelay();
         }
+
+
+
+        
+        async function editUser() {
+            const emailId = document.getElementById('emailId1').value;
+          //  const campaignId = document.getElementById('campaignIdForEditUser').value;
+            const messageToSend = document.getElementById('message');
+            console.log(currentUserId);
+
+            try {
+                const response = await fetch(`/edit/${currentUserId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ emailId })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    closeEditModal('editmodal');
+                    messageToSend.classList.add("text-green-500");
+                    messageToSend.innerHTML = "User edited successfully";
+                    fetchUserEmails(); // Refresh the user list after adding a user
+                } else {
+                    messageToSend.classList.add("text-red-500");
+                    messageToSend.innerHTML = data.message;
+                }
+            } catch (error) {
+                document.getElementById('modalError').innerText = 'Error adding user. Please try again.';
+                console.error('Error adding user:', error);
+            }
+
+            // Clear message after a few seconds
+            clearMessageAfterDelay();
+        }
+
 
         document.getElementById('uploadForm').addEventListener('submit', async (event) => {
             event.preventDefault(); // Prevent default form submission
