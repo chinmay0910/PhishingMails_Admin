@@ -374,6 +374,9 @@ async function populateCampaignDropdown() {
     try {
         const response = await fetch('/campaigns');
         const campaigns = await response.json();
+
+        // Sort campaigns by createdDate to find the most recent one
+        campaigns.sort((a, b) => new Date(b.createdDate) - new Date(a.createdDate));
         
         const selectElement = document.getElementById('campaign-select');
         campaigns.forEach(campaign => {
@@ -382,6 +385,15 @@ async function populateCampaignDropdown() {
             option.textContent = campaign.name; // Assuming 'name' is a field in your campaign data
             selectElement.appendChild(option);
         });
+
+        if (campaigns.length > 0) {
+            selectElement.value = campaigns[0]._id;  // Set the most recent campaign as selected
+            const data = await fetchCampaignData(campaigns[0]._id);
+            if (data) {
+                updateVisualizations(data);
+            }
+        }
+
     } catch (error) {
         console.error('Error fetching campaigns:', error);
     }

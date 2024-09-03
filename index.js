@@ -261,27 +261,27 @@ app.get('/incrementLinkOpenCount/:userId', async (req, res) => {
 });
 
 // // Defined API endpoint to increment attachmentOpenCount
-// app.get('/incrementAttachmentOpenCount/:userId', async (req, res) => {
-//     try {
-//         // Extract userId from request parameters
-//         const userId = req.params.userId;
+app.get('/incrementAttachmentOpenCount/:userId', async (req, res) => {
+    try {
+        // Extract userId from request parameters
+        const userId = req.params.userId;
 
-//         // Find the user by userId
-//         const user = await User.findById(userId);
+        // Find the user by userId
+        const user = await User.findById(userId);
 
-//         if (user) {
-//             user.attachmentOpenCount += 1;
-//             await user.save();
-//         }
+        if (user) {
+            user.attachmentOpenCount += 1;
+            await user.save();
+        }
 
-//         // Respond with a 1x1 transparent GIF image
-//         res.sendFile('pixel.jpg', { root: __dirname });
-//     } catch (error) {
-//         // If an error occurs, send an error response
-//         console.error(error);
-//         res.status(500).json({ message: 'Internal server error' });
-//     }
-// });
+        // Respond with a 1x1 transparent GIF image
+        res.sendFile('pixel.jpg', { root: __dirname });
+    } catch (error) {
+        // If an error occurs, send an error response
+        console.error(error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
 
 // // Defined route to handle form submission
 // app.post('/login', async (req, res) => {

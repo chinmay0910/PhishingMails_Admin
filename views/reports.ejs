@@ -15,6 +15,10 @@
     <div class="max-w-3xl mx-auto bg-white rounded-lg shadow-md p-6 mt-12">
         <div class="flex flex-row justify-end mb-8">
             <div class="flex flex-row">
+                <button id="deleteSelectedBtn" onclick="deleteSelectedUsers()" class="bg-red-400 text-white px-4 py-2 rounded mx-2">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+
                 <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
                     title="Create Users using Excel" onclick="openModal('uploadModal')">
                     <i class="fa-solid fa-file-arrow-up"></i>
@@ -168,7 +172,6 @@
                     </tr>
                 </tbody>
             </table>
-            <button onclick="deleteSelectedUsers()" class="bg-red-500 text-white px-4 py-2 rounded">Delete Selected</button>
         </div>
     </div>
 
@@ -305,13 +308,23 @@
                 defaultOption.textContent = 'Select a campaign';
                 campaignDropdown.appendChild(defaultOption);
 
+                // Sort campaigns by createdDate to find the most recent one
+                campaigns.sort((a, b) => new Date(b.createdDate) - new Date(a.createdDate));
+
                 // Populate the dropdown with campaigns
                 campaigns.forEach(campaign => {
                     const option = document.createElement('option');
                     option.value = campaign._id;
                     option.textContent = campaign.name;
+
                     campaignDropdown.appendChild(option);
                 });
+
+                if (campaigns.length > 0) {
+                    campaignDropdown.value = campaigns[0]._id;  // Set the most recent campaign as selected
+                    await fetchUserEmails();  // Manually trigger fetching emails after setting the selected campaign
+                }
+
             } catch (error) {
                 console.error('Error fetching campaigns:', error);
             }
