@@ -2,8 +2,6 @@ const connectToMongo = require('./db')
 const mongoose = require('mongoose');
 const express = require('express')
 const bodyParser = require('body-parser');
-// const campaign1User = require('./models/User');
-// const campaign2User = require('./models/campaign2');
 const User = require('./models/User');
 const sendMail = require('./utils/sendMail');
 const path = require('path')
@@ -16,10 +14,12 @@ const multer = require('multer');
 const getGeolocation = require('./utils/getApproxLocation');
 const Campaign = require('./models/Campaign');
 const ObjectId = mongoose.Types.ObjectId;
+const cors = require('cors');
 
 
 connectToMongo();
 const app = express()
+app.use(cors());
 app.use(bodyParser.json());
 
 // handling static files 
@@ -29,7 +29,7 @@ app.use(express.static(path.join(process.cwd(), 'public')));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'))
 
-const port = 5000
+const port = 5001
 
 app.get('/', (req, res) => {
     res.render('DataVisualization.ejs')
@@ -114,8 +114,6 @@ app.post('/upload', upload.single('file'), async (req, res) => {
     }
 });
 
-
-
 app.post('/delete-users', async (req, res) => {
     try {
         // Extract userIds from the request body
@@ -139,7 +137,7 @@ app.post('/delete-users', async (req, res) => {
 });
 
 
-// Assuming you have a User model
+// Return the user's email based on ID
 app.get('/user/:id', async (req, res) => {
     try {
         // Extract user ID from the request parameters
@@ -161,6 +159,8 @@ app.get('/user/:id', async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 });
+
+app.use('/api/record/', require('./routes/updateActivity'))
 
 app.post('/users', async (req, res) => {
     try {
@@ -230,8 +230,8 @@ app.get('/incrementLinkOpenCount/:userId', async (req, res) => {
 
 
         //  Capture the user's IP address from the request   
-        //  const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-         const ipAddress = "103.206.182.96";
+         const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+        //  const ipAddress = "103.206.182.96";
 
 
         // Find the user by userId
@@ -251,8 +251,8 @@ app.get('/incrementLinkOpenCount/:userId', async (req, res) => {
         await user.save();
 
         // Send a success response
-        // res.status(200).json({ message: 'linkOpenCount incremented successfully', user });
-        res.render('SigninPage.ejs', {data: userId});
+        res.status(200).json({ message: 'linkOpenCount incremented successfully' });
+        // res.render('SigninPage.ejs', {data: userId});
     } catch (error) {
         // If an error occurs, send an error response
         console.error(error);

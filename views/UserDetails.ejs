@@ -104,12 +104,25 @@
                     
                     <h2 class="text-xl font-semibold mt-6">Submitted Content</h2>
                     <ul class="list-disc pl-5">
-                        ${user.submittedContent.length <= 0 ? "<li>No Data Submitted yet</li>" :
-                                user.submittedContent.map(content => `
-                            <li class="py-1">Username: <span class="font-medium">${content.username}</span>, Password: <span class="font-medium">${content.password}</span></li>
-                        `).join('')}
-                    </ul>
-                </div>`;
+                        ${user.submittedContent.length  <= 0 ? "<li>No Data Submitted yet</li>" :
+                                user.submittedContent.map(content => {
+                                    // Construct the list item directly
+                                    if (content.username === undefined && content.mobileNo !== undefined) {
+                                        return `<li class="py-1">Mobile No: <span class="font-medium">${content.mobileNo}</span></li>`;
+                                    }
+
+                                    // Otherwise, include all defined fields
+                                    return `
+                                        <li class="py-1">
+                                            ${content.username !== undefined ? `Username: <span class="font-medium">${content.username}</span>` : ''}
+                                            ${content.password !== undefined ? `, Password: <span class="font-medium">${content.password}</span>` : ''}
+                                            ${content.name !== undefined ? `, Name: <span class="font-medium">${content.name}</span>` : ''}
+                                            ${content.phone !== undefined ? `, Phone: <span class="font-medium">${content.phone}</span>` : ''}
+                                            ${content.category !== undefined ? `, Category: <span class="font-medium">${content.category}</span>` : ''}
+                                        </li>`;
+                                }).join('')}
+                                    </ul>
+                                </div>`;
                     } else {
                         document.getElementById('details').innerHTML = '<p class="text-red-500">User not found</p>';
                     }
