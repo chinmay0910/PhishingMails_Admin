@@ -29,11 +29,8 @@ app.use(express.static(path.join(process.cwd(), 'public')));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'))
 
-const port = 5001
+const port = 5000
 
-app.get('/', (req, res) => {
-    res.render('DataVisualization.ejs')
-})
 app.get('/user/reported', (req, res) => {
     res.render('reports.ejs')
 })
@@ -43,7 +40,7 @@ app.get('/user/viewDetails/:id', (req, res) => {
 app.get('/signinpage', (req, res) => {
     res.render('SigninPage.ejs')
 })
-app.get('/newVisualization', (req, res) => {
+app.get('/', (req, res) => {
     res.render('DataVisualizationNew.ejs')
 })
 app.get('/user/:id', async (req, res) => {
