@@ -26,6 +26,7 @@ app.use(bodyParser.json());
 
 // handling static files 
 app.use(express.static(path.join(process.cwd(), 'public')));
+app.use(express.static(path.join(process.cwd(), 'uploads')));
 
 // handling ejs specific stuff
 app.set('view engine', 'ejs');
