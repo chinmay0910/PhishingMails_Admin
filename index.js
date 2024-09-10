@@ -5,6 +5,7 @@ const bodyParser = require('body-parser');
 const User = require('./models/User');
 const sendMail = require('./utils/sendMail');
 const path = require('path')
+const fs = require('fs');
 const ExcelJS = require('exceljs');
 const { signinPage, createUser, login, getUser } = require("./controllers/signin");
 const { createCampaign, getAllCampaigns } = require("./controllers/CampaignInfo");
@@ -12,10 +13,11 @@ const fetchuser = require('./middleware/fetchuser');
 const XLSX = require('xlsx');
 const multer = require('multer');
 const getGeolocation = require('./utils/getApproxLocation');
+const generateOdtDocument = require("./utils/generateODTfile");
 const Campaign = require('./models/Campaign');
 const ObjectId = mongoose.Types.ObjectId;
 const cors = require('cors');
-
+const archiver = require('archiver');
 
 connectToMongo();
 const app = express()
@@ -445,6 +447,84 @@ app.post('/send-email', async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Failed to send emails' });
+    }
+});
+
+app.get('/generate-document/:userId', async (req, res) => {
+    const userId = req.params.userId;
+    
+    // Fetch the emailId for the provided userId (from your database)
+    const user = await User.findById(userId);
+    
+    if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+    }
+
+    const emailId = user.emailId;
+    const templatePath = path.join(__dirname, '/public/templates/', 'input.odt');
+    const outputFolder = path.join(__dirname, '/uploads/docs');
+
+    try {
+        // Call the utility function to generate the ODT document
+        const outputFilePath = generateOdtDocument(userId, emailId, templatePath, outputFolder);
+        
+        // Set content-disposition to attachment to trigger a download
+        res.setHeader('Content-Disposition', `attachment; filename="${emailId}.odt"`);
+        
+        // Send the file as a response
+        res.sendFile(outputFilePath, (err) => {
+            if (err) {
+                console.error('Error sending file:', err);
+                res.status(500).json({ error: 'Error sending file' });
+            }
+        });
+    } catch (error) {
+        console.error('Error generating document:', error);
+        res.status(500).json({ error: 'Error generating document' });
+    }
+});
+
+app.get('/generate-zip-documents/:campaignId', async (req, res) => {
+    try {
+        // Fetch all users from your database
+        const campaignId = req.params.campaignId;
+        const users = await User.find({campaignId});
+        
+        if (!users || users.length === 0) {
+            return res.status(404).json({ error: 'No users found' });
+        }
+
+        // Create a zip stream
+        const archive = archiver('zip', {
+            zlib: { level: 9 } // Sets the compression level
+        });
+
+        // Set headers for zip download
+        res.setHeader('Content-Disposition', 'attachment; filename=documents.zip');
+        res.setHeader('Content-Type', 'application/zip');
+
+        // Pipe the zip output to the response
+        archive.pipe(res);
+
+        // Loop through users and add their ODT documents to the archive
+        for (const user of users) {
+            const emailId = user.emailId;
+            const userId = user._id.toString();
+            const templatePath = path.join(__dirname, '/public/templates/', 'input.odt');
+            const outputFolder = path.join(__dirname, '/uploads/docs');
+
+            // Generate ODT document
+            const outputFilePath = generateOdtDocument(userId, emailId, templatePath, outputFolder);
+
+            // Append the generated file to the ZIP archive
+            archive.file(outputFilePath, { name: `${emailId}.odt` });
+        }
+
+        // Finalize the archive (this will trigger sending the zip to the client)
+        await archive.finalize();
+    } catch (error) {
+        console.error('Error generating ZIP:', error);
+        res.status(500).json({ error: 'Error generating ZIP' });
     }
 });
 

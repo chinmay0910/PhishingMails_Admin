@@ -218,9 +218,12 @@
                     displayUsers(users.users);
                     campaignName.innerHTML = `
                             <p class="text-xl font-bold text-green-500 underline ">${users.campaignName}</p> 
-                            <input type="text" id="searchInput" class="border px-4 py-2 rounded w-full outline-none border border-2 border-green-400" placeholder="Search by email..." onkeyup="filterUsers()">
+                            <input type="text" id="searchInput" class="border px-2 py-2 rounded w-full outline-none border border-2 border-green-400" placeholder="Search by email..." onkeyup="filterUsers()">
                             <i id="bulkCampaignId" data-campaign-id="${campaignId}" onclick="openModal('emailModal')" class="fa-solid fa-paper-plane text-green-500 ps-4" title="Send Email"></i> 
-                            <a href="/download-users-excel/${campaignId}" class="px-4" title="Export Data in Excel">
+                            <a href="/generate-zip-documents/${campaignId}" class="px-2" title="Generate Phishing Documents for ${users.campaignName}">
+                                <i class="fa-solid fa-file-word text-green-500"></i>
+                            </a>
+                            <a href="/download-users-excel/${campaignId}" class="pr-2" title="Export Data in Excel">
                                 <i class="fas fa-file-excel text-green-500"></i>
                             </a>
                         `;

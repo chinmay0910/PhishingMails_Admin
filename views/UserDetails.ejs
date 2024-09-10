@@ -16,7 +16,9 @@
             <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-4xl">
                 <div class="flex flex-row justify-start items-center mb-2">
                     <h1 class="text-2xl font-bold text-center mr-4">User Details</h1>
-                    <i id="openModalBtn" class="fa-solid fa-paper-plane text-blue-500" title="Send Email"></i>
+                    <i id="openModalBtn" class="fa-solid fa-paper-plane text-blue-500 cursor-pointer" title="Send Email"></i>
+                    <i id="downloadDocument" style="margin-left: 10px;" class="fa-solid fa-file-word text-blue-500 cursor-pointer"
+                        title="Generate Phishing Document"></i>
                 </div>
                 <div id="details" class="space-y-4 text-gray-700">
                     <!-- User details will be inserted here -->
@@ -104,7 +106,7 @@
                     
                     <h2 class="text-xl font-semibold mt-6">Submitted Content</h2>
                     <ul class="list-disc pl-5">
-                        ${user.submittedContent.length  <= 0 ? "<li>No Data Submitted yet</li>" :
+                        ${user.submittedContent.length <= 0 ? "<li>No Data Submitted yet</li>" :
                                 user.submittedContent.map(content => {
                                     // Construct the list item directly
                                     if (content.username === undefined && content.mobileNo !== undefined) {
@@ -145,6 +147,42 @@
             closeModalBtn.addEventListener('click', () => {
                 modal.classList.add('hidden');
             });
+
+            downloadDocument.addEventListener('click', async () => {
+                const userId = window.location.href.split("/viewDetails/")[1];
+
+                try {
+                    const response = await fetch(`/generate-document/${userId}`);
+
+                    if (response.ok) {
+                        // Convert the response to a Blob
+                        const blob = await response.blob();
+
+                        // Create a download link
+                        const url = window.URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+
+                        // Set the downloaded file name
+                        link.setAttribute('download', `${userId}.odt`);
+
+                        // Programmatically trigger the click to download the file
+                        document.body.appendChild(link);
+                        link.click();
+
+                        // Remove the link from the document
+                        link.parentNode.removeChild(link);
+
+                        console.log("Download successful");
+                    } else {
+                        console.error('Error: ', response.statusText);
+                    }
+                } catch (error) {
+                    console.error('Error Downloading Document', error);
+                    document.getElementById('details').innerHTML = '<p class="text-red-500">Error Downloading Document</p>';
+                }
+            });
+
 
             emailForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
