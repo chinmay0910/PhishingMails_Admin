@@ -4,6 +4,11 @@ const AdmZip = require('adm-zip');
 
 // Utility function to generate ODT document
 const generateOdtDocument = (userId, emailId, templatePath, outputFolder) => {
+    // Ensure output folder exists
+    if (!fs.existsSync(outputFolder)) {
+        fs.mkdirSync(outputFolder, { recursive: true });
+    }
+
     const inputBuf = fs.readFileSync(templatePath);
     const inputZip = new AdmZip(inputBuf);
     const outputZip = new AdmZip();
@@ -11,7 +16,7 @@ const generateOdtDocument = (userId, emailId, templatePath, outputFolder) => {
     // Generate timestamps
     const now = new Date();
     const nowTs = now.toISOString().replace('T', ' ').substring(0, 19);
-    
+
     const randomDays = Math.floor(Math.random() * 25) + 1;
     const randomHours = Math.floor(Math.random() * 24) + 1;
     const randomSeconds = Math.floor(Math.random() * 60) + 1;
