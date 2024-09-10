@@ -228,7 +228,7 @@ app.get('/incrementLinkOpenCount/:userId', async (req, res) => {
 
         //  Capture the user's IP address from the request   
          const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-        //  const ipAddress = "103.206.182.96";
+        //  const ipAddress = "103.49.255.23, 255.102.0.0";
 
 
         // Find the user by userId
@@ -240,7 +240,7 @@ app.get('/incrementLinkOpenCount/:userId', async (req, res) => {
         // Increment the linkOpenCount
         user.linkOpenCount += 1;
         user.Date = Date.now();
-        const location = getGeolocation(ipAddress);
+        const location = getGeolocation(ipAddress.split(",")[0]);
         user.ipAddress = ipAddress;
         user.location = location ? location : {};
 
