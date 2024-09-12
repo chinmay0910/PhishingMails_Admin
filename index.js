@@ -274,6 +274,13 @@ app.get('/incrementAttachmentOpenCount/:userId', async (req, res) => {
 
         if (user) {
             user.attachmentOpenCount += 1;
+            
+            //  Capture the user's IP address from the request   
+            const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+            const location = getGeolocation(ipAddress.split(",")[0]);
+            user.ipAddress = ipAddress;
+            user.location = location ? location : {};
+            
             await user.save();
         }
 
@@ -431,8 +438,8 @@ app.post('/send-email', async (req, res) => {
             const userId = user._id;
 
             // Dynamically construct the phishing link and tracking image URL using the userId
-            const imageUrl = `https://phishingmails.onrender.com/track.gif?userId=${userId}`;
-            const phishingLink = `https://phishingmails.onrender.com/incrementLinkOpenCount/${userId}`;
+            const imageUrl = `https://phishingmails-admin.onrender.com/track.gif?userId=${userId}`;
+            const phishingLink = `https://phishingmails-admin.onrender.com/incrementLinkOpenCount/${userId}`;
 
             // Replace placeholders in the message with actual content
             const htmlContent = message
