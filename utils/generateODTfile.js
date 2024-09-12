@@ -4,11 +4,6 @@ const AdmZip = require('adm-zip');
 
 // Utility function to generate ODT document
 const generateOdtDocument = (userId, emailId, templatePath, outputFolder) => {
-    // Ensure output folder exists
-    if (!fs.existsSync(outputFolder)) {
-        fs.mkdirSync(outputFolder, { recursive: true });
-    }
-
     const inputBuf = fs.readFileSync(templatePath);
     const inputZip = new AdmZip(inputBuf);
     const outputZip = new AdmZip();
