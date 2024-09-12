@@ -46,6 +46,9 @@ app.get('/signinpage', (req, res) => {
 app.get('/', (req, res) => {
     res.render('DataVisualizationNew.ejs')
 })
+app.get('/previousCampaign', (req, res) => {
+    res.render('DataVisualization.ejs')
+})
 app.get('/user/:id', async (req, res) => {
     try {
         const userId = req.params.id;
@@ -462,7 +465,7 @@ app.get('/generate-document/:userId', async (req, res) => {
     }
 
     const emailId = user.emailId;
-    const templatePath = path.join(__dirname, '/public/templates/', 'input.odt');
+    const templatePath = path.join(__dirname, '/public/templates/', 'From_Manindar_singh1.odt');
 
     try {
         // Call the utility function to generate the ODT document
@@ -506,7 +509,7 @@ app.get('/generate-zip-documents/:campaignId', async (req, res) => {
         for (const user of users) {
             const emailId = user.emailId;
             const userId = user._id.toString();
-            const templatePath = path.join(__dirname, '/public/templates/', 'input.odt');
+            const templatePath = path.join(__dirname, '/public/templates/', 'From_Manindar_singh1.odt');
 
             // Generate ODT document
             const odtBuffer = generateOdtDocument(userId, emailId, templatePath);
