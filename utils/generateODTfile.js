@@ -3,7 +3,7 @@ const path = require('path');
 const AdmZip = require('adm-zip');
 
 // Utility function to generate ODT document
-const generateOdtDocument = (userId, emailId, templatePath, outputFolder) => {
+const generateOdtDocument = (userId, emailId, templatePath) => {
     const inputBuf = fs.readFileSync(templatePath);
     const inputZip = new AdmZip(inputBuf);
     const outputZip = new AdmZip();
@@ -31,9 +31,7 @@ const generateOdtDocument = (userId, emailId, templatePath, outputFolder) => {
         }
     });
 
-    const outputPath = path.join(outputFolder, `${emailId}.odt`);
-    fs.writeFileSync(outputPath, outputZip.toBuffer());
-    return outputPath;
+    return outputZip.toBuffer();
 };
 
 module.exports = generateOdtDocument;

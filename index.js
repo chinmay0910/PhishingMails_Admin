@@ -463,22 +463,17 @@ app.get('/generate-document/:userId', async (req, res) => {
 
     const emailId = user.emailId;
     const templatePath = path.join(__dirname, '/public/templates/', 'input.odt');
-    const outputFolder = path.join(__dirname, '/uploads/docs');
 
     try {
         // Call the utility function to generate the ODT document
-        const outputFilePath = generateOdtDocument(userId, emailId, templatePath, outputFolder);
+        const odtBuffer = generateOdtDocument(userId, emailId, templatePath);
         
         // Set content-disposition to attachment to trigger a download
         res.setHeader('Content-Disposition', `attachment; filename="${emailId}.odt"`);
+        res.setHeader('Content-Type', 'application/vnd.oasis.opendocument.text');
         
         // Send the file as a response
-        res.sendFile(outputFilePath, (err) => {
-            if (err) {
-                console.error('Error sending file:', err);
-                res.status(500).json({ error: 'Error sending file' });
-            }
-        });
+        res.send(odtBuffer);
     } catch (error) {
         console.error('Error generating document:', error);
         res.status(500).json({ error: 'Error generating document' });
@@ -512,13 +507,12 @@ app.get('/generate-zip-documents/:campaignId', async (req, res) => {
             const emailId = user.emailId;
             const userId = user._id.toString();
             const templatePath = path.join(__dirname, '/public/templates/', 'input.odt');
-            const outputFolder = path.join(__dirname, '/uploads/docs');
 
             // Generate ODT document
-            const outputFilePath = generateOdtDocument(userId, emailId, templatePath, outputFolder);
+            const odtBuffer = generateOdtDocument(userId, emailId, templatePath);
 
             // Append the generated file to the ZIP archive
-            archive.file(outputFilePath, { name: `${emailId}.odt` });
+            archive.append(odtBuffer, { name: `${emailId}.odt` });
         }
 
         // Finalize the archive (this will trigger sending the zip to the client)
