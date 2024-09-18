@@ -1,7 +1,7 @@
 
 import ApexCharts from './apexCharts.js';
 
-let radialChart1, radialChart2, radialChart3, radialChart4, reportedSpamChart, linechart, heatmapChart;
+let  radialChart2, radialChart3, reportedSpamChart, linechart;
 
 async function populateCampaignDropdown() {
     try {
@@ -34,28 +34,27 @@ async function populateCampaignDropdown() {
 
 async function fetchCampaignData(campaignId) {
     try {
-        const [aggregateStatsResponse, userActivityResponse, heatmapResponse, userActionsResponse] = await Promise.all([
+        const [aggregateStatsResponse, userActivityResponse, userActionsResponse] = await Promise.all([
             fetch(`/aggregate-user-stats/${campaignId}`),
             fetch(`/useractivity/${campaignId}`),
-            fetch(`/submissions-heatmap/${campaignId}`),
             fetch(`/user-actions/${campaignId}`)
         ]);
 
         const aggregateStats = await aggregateStatsResponse.json();
         const userActivityData = await userActivityResponse.json();
-        const heatmapData = await heatmapResponse.json();
         const userActions = await userActionsResponse.json();
+        console.log(userActivityData);
 
         return {
             aggregateStats,
             userActivityData,
-            heatmapData,
             userActions
         };
     } catch (error) {
         console.error('Error fetching campaign data:', error);
     }
 }
+
 
 function clearChartContainer(containerId) {
     const container = document.querySelector(`#${containerId}`);
@@ -79,7 +78,7 @@ function createReportedSpamChart(containerId, reportedCount, notReportedCount) {
         },
         series: [reportedCount, notReportedCount],
         labels: ['Reported Spam', 'Not Reported Spam'],
-        colors: ['#ea801c', '#1080bb'], // Orange and Blue
+        colors: ['#ff4560', '#00e396'], // Orange and Blue
         plotOptions: {
             pie: {
                 donut: {
@@ -200,7 +199,7 @@ function createLineChart(containerId, seriesData, xAxisCategories, chartTitle) {
         markers: {
             size: 4
         },
-        colors: ['#1080bb', '#ea801c'], // Blue and Orange
+        colors: ['#00e396', '#008ffb'], // Blue and Orange
         legend: {
             position: 'top'
         }
@@ -210,45 +209,68 @@ function createLineChart(containerId, seriesData, xAxisCategories, chartTitle) {
     linechart.render();
 }
 
-function createHeatmapChart(containerId, data) {
-    destroyChart(heatmapChart, 'Heatmap');
+
+// function createUserActions(userActions) {
+//     const container = document.getElementById('userActionsContainer');
+
+//     // Create table
+//     const table = document.createElement('table');
+//     table.className = 'min-w-full bg-white border border-gray-300';
+
+//     const thead = document.createElement('thead');
+//     thead.className = 'text-white';
+//     thead.style.backgroundColor = "#00e396"
+
+//     const tbody = document.createElement('tbody');
+
+//     // Create table headers
+//     const headerRow = document.createElement('tr');
+//     const headers = ['Name', 'Email Opened', 'Link Opened', 'Attachment Opened', 'Submitted Data', 'Reported'];
+
+//     headers.forEach(header => {
+//         const th = document.createElement('th');
+//         th.className = 'px-4 py-2 border-b border-gray-300 text-left';
+//         th.innerHTML = `<div>${header}</div>`;
+//         headerRow.appendChild(th);
+//     });
+
+//     thead.appendChild(headerRow);
+//     table.appendChild(thead);
+
+//     // Create table rows for each user
+//     userActions.forEach(user => {
+//         const row = document.createElement('tr');
+
+//         // Name cell
+//         const nameCell = document.createElement('td');
+//         nameCell.className = 'px-4 py-2 border-b border-gray-300';
+//         nameCell.textContent = user.name;
+//         row.appendChild(nameCell);
+
+//         // Activity cells
+//         const activities = ['emailOpened', 'linkOpened', 'attachmentOpened', 'submittedData', 'reportedSpam'];
+
+//         activities.forEach(activity => {
+//             const activityCell = document.createElement('td');
+//             activityCell.className = 'px-4 py-2 border-b border-gray-300 text-center';
+//             const actionPerformed = user.actions[activity];
+//             const cellContent = actionPerformed ? '<span class="text-green-500">✓</span>' : '<span class="text-red-500">✗</span>';
+//             activityCell.innerHTML = cellContent;
+//             row.appendChild(activityCell);
+//         });
+
+//         tbody.appendChild(row);
+//     });
+
+//     table.appendChild(tbody);
+//     container.appendChild(table);
+// }
+
+function createUserActions(containerId, userActions) {
+    // Clear the container before creating a new table
     clearChartContainer(containerId);
 
-    const options = {
-        chart: {
-            type: 'heatmap',
-            height: 350
-        },
-        dataLabels: {
-            enabled: true
-        },
-        series: [{
-            name: 'Submissions',
-            data: data
-        }],
-        xaxis: {
-            type: 'category',
-            labels: {
-                rotate: -45
-            }
-        },
-        yaxis: {
-            title: {
-                text: 'Number of Submissions'
-            }
-        },
-        title: {
-            text: 'User Submissions Heatmap'
-        },
-        colors: ['#1080bb'] // Blue
-    };
-
-    heatmapChart = new ApexCharts(document.querySelector(`#${containerId}`), options);
-    heatmapChart.render();
-}
-
-function createUserActions(userActions) {
-    const container = document.getElementById('userActionsContainer');
+    const container = document.getElementById(containerId);
 
     // Create table
     const table = document.createElement('table');
@@ -256,13 +278,13 @@ function createUserActions(userActions) {
 
     const thead = document.createElement('thead');
     thead.className = 'text-white';
-    thead.style.backgroundColor = "#00e396"
+    thead.style.backgroundColor = "#00e396";
 
     const tbody = document.createElement('tbody');
 
     // Create table headers
     const headerRow = document.createElement('tr');
-    const headers = ['Name', 'Email Opened', 'Link Opened', 'Attachment Opened', 'Submitted Data', 'Reported'];
+    const headers = ['Name', 'Link Opened', 'Attachment Opened', 'Reported'];
 
     headers.forEach(header => {
         const th = document.createElement('th');
@@ -285,7 +307,7 @@ function createUserActions(userActions) {
         row.appendChild(nameCell);
 
         // Activity cells
-        const activities = ['emailOpened', 'linkOpened', 'attachmentOpened', 'submittedData', 'reportedSpam'];
+        const activities = [ 'linkOpened', 'attachmentOpened', 'reportedSpam'];
 
         activities.forEach(activity => {
             const activityCell = document.createElement('td');
@@ -304,22 +326,21 @@ function createUserActions(userActions) {
 }
 
 
+
 function updateVisualizations(data) {
-    const { aggregateStats, userActivityData, heatmapData, userActions } = data;
+    const { aggregateStats, userActivityData, userActions } = data;
 
     // Update radial charts
-    radialChart1 = createSemiCircleRadialBar('radial-chart-1', aggregateStats.totalUsers, aggregateStats.totalEmailOpenCount, '#ea801c', 'Email Open Count', radialChart1, 'Radial 1');
-    radialChart2 = createSemiCircleRadialBar('radial-chart-2', aggregateStats.totalUsers, aggregateStats.totalLinkOpenCount, '#1080bb', 'Link Open Count', radialChart2, 'Radial 2');
-    radialChart3 = createSemiCircleRadialBar('radial-chart-3', aggregateStats.totalUsers, aggregateStats.totalAttachmentOpenCount, '#ea801c', 'Attachment Open Count', radialChart3, 'Radial 3');
-    radialChart4 = createSemiCircleRadialBar('radial-chart-4', aggregateStats.totalUsers, aggregateStats.totalSubmittedData, '#1080bb', 'Submitted Data Count', radialChart4, 'Radial 4');
+    radialChart2 = createSemiCircleRadialBar('radial-chart-2', aggregateStats.totalUsers, aggregateStats.totalLinkOpenCount, '#ff4560', 'Link Open Count', radialChart2, 'Radial 2');
+    radialChart3 = createSemiCircleRadialBar('radial-chart-3', aggregateStats.totalUsers, aggregateStats.totalAttachmentOpenCount, '#00e396', 'Attachment Open Count', radialChart3, 'Radial 3');
     createReportedSpamChart('reported-spam-chart', aggregateStats.reportedSpamCount, aggregateStats.notReportedSpamCount);
 
     // Update line chart
     createLineChart('user-activity-chart', userActivityData.seriesData, userActivityData.xAxisCategories, 'User Activity Over Time');
 
-    // Update heatmap chart
-    createHeatmapChart('heatmap-chart', heatmapData);
-    createUserActions(userActions);
+   
+    // createUserActions(userActions);
+    createUserActions('userActionsContainer', userActions);
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
