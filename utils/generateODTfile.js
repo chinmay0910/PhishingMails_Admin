@@ -21,7 +21,8 @@ const generateOdtDocument = (userId, emailId, templatePath) => {
     inputZip.getEntries().forEach(entry => {
         if (entry.entryName === "content.xml") {
             let content = entry.getData().toString('utf-8');
-            const trackingLink = `https://phishingmails-admin.onrender.com/incrementAttachmentOpenCount/${userId}`;
+            // const trackingLink = `https://phishingmails-admin.onrender.com/track.gif?userId=${userId}`;
+            const trackingLink = `${userId}`;
             content = content.replace(`HONEYDROP_TOKEN_URL`, trackingLink);
             // content = content.replace("aaaaaaaaaaaaaaaaaaaa", createdTs);
             // content = content.replace("bbbbbbbbbbbbbbbbbbbb", nowTs);
