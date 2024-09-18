@@ -684,6 +684,64 @@ app.get('/download-users-excel/:campaignNo', async (req, res) => {
     }
 });
 
+// app.get('/useractivity/:campaignId', async (req, res) => {
+//     try {
+//         const { campaignId } = req.params;
+
+//         // Convert campaignId to ObjectId
+//         const campaignObjectId = new ObjectId(campaignId);
+
+//         // Fetch the required data from the User collection filtered by campaignId
+//         const users = await User.aggregate([
+//             {
+//                 $match: { campaignId: campaignObjectId } // Filter by campaignId (ObjectId)
+//             },
+//             {
+//                 $group: {
+//                     _id: { 
+//                         date: { 
+//                             $dateToString: { format: "%Y-%m-%d", date: "$Date" } 
+//                         }
+//                     },
+//                     emailOpenCount: { $sum: "$emailOpenCount" },
+//                     // attachmentOpenCount: { $sum: "$attachmentOpenCount" }
+//                     attachmentOpenCount: { $sum: { $cond: { if: { $gt: ['$attachmentOpenCount', 0] }, then: 1, else: 0 } } },
+//                 }
+//             },
+//             {
+//                 $sort: { "_id.date": 1 }
+//             }
+//         ]);
+
+//         // Filter out any null or undefined dates
+//         const filteredUsers = users.filter(user => user._id.date !== null && user._id.date !== undefined);
+
+//         // Format the data for the chart
+//         const seriesData = [
+//             {
+//                 name: 'Email Open Count',
+//                 data: filteredUsers.map(user => user.emailOpenCount)
+//             },
+//             {
+//                 name: 'Attachment Open Count',
+//                 data: filteredUsers.map(user => user.attachmentOpenCount)
+//             }
+//         ];
+
+//         const xAxisCategories = filteredUsers.map(user => user._id.date);
+
+//         // Send the data as a response
+//         res.json({
+//             seriesData,
+//             xAxisCategories
+//         });
+//     } catch (error) {
+//         console.error('Error fetching user activity data:', error);
+//         res.status(500).json({ error: 'Internal server error' });
+//     }
+// });
+
+
 app.get('/useractivity/:campaignId', async (req, res) => {
     try {
         const { campaignId } = req.params;
@@ -703,7 +761,7 @@ app.get('/useractivity/:campaignId', async (req, res) => {
                             $dateToString: { format: "%Y-%m-%d", date: "$Date" } 
                         }
                     },
-                    emailOpenCount: { $sum: "$emailOpenCount" },
+                    linkOpenCount: { $sum: "$linkOpenCount" },
                     // attachmentOpenCount: { $sum: "$attachmentOpenCount" }
                     attachmentOpenCount: { $sum: { $cond: { if: { $gt: ['$attachmentOpenCount', 0] }, then: 1, else: 0 } } },
                 }
@@ -719,8 +777,8 @@ app.get('/useractivity/:campaignId', async (req, res) => {
         // Format the data for the chart
         const seriesData = [
             {
-                name: 'Email Open Count',
-                data: filteredUsers.map(user => user.emailOpenCount)
+                name: 'Link Open Count',
+                data: filteredUsers.map(user => user.linkOpenCount)
             },
             {
                 name: 'Attachment Open Count',
@@ -740,7 +798,6 @@ app.get('/useractivity/:campaignId', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
-
 
 app.get('/submissions-heatmap/:campaignId', async (req, res) => {
     try {
