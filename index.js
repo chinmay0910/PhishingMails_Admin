@@ -704,7 +704,8 @@ app.get('/useractivity/:campaignId', async (req, res) => {
                         }
                     },
                     emailOpenCount: { $sum: "$emailOpenCount" },
-                    linkOpenCount: { $sum: "$linkOpenCount" }
+                    // attachmentOpenCount: { $sum: "$attachmentOpenCount" }
+                    attachmentOpenCount: { $sum: { $cond: { if: { $gt: ['$attachmentOpenCount', 0] }, then: 1, else: 0 } } },
                 }
             },
             {
@@ -722,8 +723,8 @@ app.get('/useractivity/:campaignId', async (req, res) => {
                 data: filteredUsers.map(user => user.emailOpenCount)
             },
             {
-                name: 'Link Open Count',
-                data: filteredUsers.map(user => user.linkOpenCount)
+                name: 'Attachment Open Count',
+                data: filteredUsers.map(user => user.attachmentOpenCount)
             }
         ];
 
@@ -786,6 +787,51 @@ app.get('/submissions-heatmap/:campaignId', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+
+app.get('/user-actions/:campaignId', async (req, res) => {
+    try {
+        const { campaignId } = req.params;
+
+        // Convert campaignId to ObjectId
+        const campaignObjectId = new mongoose.Types.ObjectId(campaignId);
+
+        // Find users who have performed any actions or met additional conditions for the specified campaign
+        const users = await User.find({
+            campaignId: campaignObjectId,
+            $or: [
+                { linkOpenCount: { $gt: 0 } },
+                { emailOpenCount: { $gt: 0 } },
+                { attachmentOpenCount: { $gt: 0 } },
+                { submittedData: { $gt: 0 } },
+                { reportedSpam: true }
+            ]
+        })
+        .select('emailId linkOpenCount emailOpenCount attachmentOpenCount submittedData reportedSpam') // Include all relevant fields
+        .exec();
+
+        // Map user data to a format suitable for the frontend
+        const userActions = users.map(user => {
+            return {
+                name: user.emailId,
+                actions: {
+                    linkOpened: user.linkOpenCount > 0,
+                    emailOpened: user.emailOpenCount > 0,
+                    attachmentOpened: user.attachmentOpenCount > 0,
+                    submittedData: user.submittedData > 0,
+                    reportedSpam: user.reportedSpam
+                }
+            };
+        });
+
+        // Return the user actions data as JSON
+        res.json(userActions);
+    } catch (error) {
+        // Handle errors
+        console.error('Error fetching user actions:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
 
 app.get('/signin', signinPage)
 app.post('/createuser', createUser)

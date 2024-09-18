@@ -34,20 +34,23 @@ async function populateCampaignDropdown() {
 
 async function fetchCampaignData(campaignId) {
     try {
-        const [aggregateStatsResponse, userActivityResponse, heatmapResponse] = await Promise.all([
+        const [aggregateStatsResponse, userActivityResponse, heatmapResponse, userActionsResponse] = await Promise.all([
             fetch(`/aggregate-user-stats/${campaignId}`),
             fetch(`/useractivity/${campaignId}`),
-            fetch(`/submissions-heatmap/${campaignId}`)
+            fetch(`/submissions-heatmap/${campaignId}`),
+            fetch(`/user-actions/${campaignId}`)
         ]);
 
         const aggregateStats = await aggregateStatsResponse.json();
         const userActivityData = await userActivityResponse.json();
         const heatmapData = await heatmapResponse.json();
+        const userActions = await userActionsResponse.json();
 
         return {
             aggregateStats,
             userActivityData,
-            heatmapData
+            heatmapData,
+            userActions
         };
     } catch (error) {
         console.error('Error fetching campaign data:', error);
@@ -244,8 +247,65 @@ function createHeatmapChart(containerId, data) {
     heatmapChart.render();
 }
 
+function createUserActions(userActions) {
+    const container = document.getElementById('userActionsContainer');
+
+    // Create table
+    const table = document.createElement('table');
+    table.className = 'min-w-full bg-white border border-gray-300';
+
+    const thead = document.createElement('thead');
+    thead.className = 'text-white';
+    thead.style.backgroundColor = "#00e396"
+
+    const tbody = document.createElement('tbody');
+
+    // Create table headers
+    const headerRow = document.createElement('tr');
+    const headers = ['Name', 'Email Opened', 'Link Opened', 'Attachment Opened', 'Submitted Data', 'Reported'];
+
+    headers.forEach(header => {
+        const th = document.createElement('th');
+        th.className = 'px-4 py-2 border-b border-gray-300 text-left';
+        th.innerHTML = `<div>${header}</div>`;
+        headerRow.appendChild(th);
+    });
+
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    // Create table rows for each user
+    userActions.forEach(user => {
+        const row = document.createElement('tr');
+
+        // Name cell
+        const nameCell = document.createElement('td');
+        nameCell.className = 'px-4 py-2 border-b border-gray-300';
+        nameCell.textContent = user.name;
+        row.appendChild(nameCell);
+
+        // Activity cells
+        const activities = ['emailOpened', 'linkOpened', 'attachmentOpened', 'submittedData', 'reportedSpam'];
+
+        activities.forEach(activity => {
+            const activityCell = document.createElement('td');
+            activityCell.className = 'px-4 py-2 border-b border-gray-300 text-center';
+            const actionPerformed = user.actions[activity];
+            const cellContent = actionPerformed ? '<span class="text-green-500">✓</span>' : '<span class="text-red-500">✗</span>';
+            activityCell.innerHTML = cellContent;
+            row.appendChild(activityCell);
+        });
+
+        tbody.appendChild(row);
+    });
+
+    table.appendChild(tbody);
+    container.appendChild(table);
+}
+
+
 function updateVisualizations(data) {
-    const { aggregateStats, userActivityData, heatmapData } = data;
+    const { aggregateStats, userActivityData, heatmapData, userActions } = data;
 
     // Update radial charts
     radialChart1 = createSemiCircleRadialBar('radial-chart-1', aggregateStats.totalUsers, aggregateStats.totalEmailOpenCount, '#ea801c', 'Email Open Count', radialChart1, 'Radial 1');
@@ -259,6 +319,7 @@ function updateVisualizations(data) {
 
     // Update heatmap chart
     createHeatmapChart('heatmap-chart', heatmapData);
+    createUserActions(userActions);
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
