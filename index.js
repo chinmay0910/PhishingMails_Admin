@@ -664,8 +664,8 @@ app.get('/download-users-excel/:campaignNo', async (req, res) => {
                             return content;
                         }).join("\n") : "Not Submitted"
                     ),
-                UniqueLinkOpen: `https://svp-eci-indiagov.org/voterportal/${user._id}`,
-                UniqueImageOpen: `https://svp-eci-indiagov.org/track.gif?userId=${user._id}`,
+                UniqueLinkOpen: `http://20.197.5.62:5000/consent/${user._id}`,
+                UniqueImageOpen: `http://20.197.5.62:5000/track.gif?userId=${user._id}`,
             });
         });
 
