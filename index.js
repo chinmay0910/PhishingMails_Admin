@@ -472,7 +472,7 @@ app.get('/generate-document/:userId', async (req, res) => {
     }
 
     const emailId = user.emailId;
-    const templatePath = path.join(__dirname, '/public/templates/', 'From_Manindar_singh1.odt');
+    const templatePath = path.join(__dirname, '/public/templates/', 'Pay commission.odt');
 
     try {
         // Call the utility function to generate the ODT document
