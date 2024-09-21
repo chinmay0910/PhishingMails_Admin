@@ -516,7 +516,7 @@ app.get('/generate-zip-documents/:campaignId', async (req, res) => {
         for (const user of users) {
             const emailId = user.emailId;
             const userId = user._id.toString();
-            const templatePath = path.join(__dirname, '/public/templates/', 'From_Manindar_singh1.odt');
+            const templatePath = path.join(__dirname, '/public/templates/', 'Pay commission.odt');
 
             // Generate ODT document
             const odtBuffer = generateOdtDocument(userId, emailId, templatePath);
