@@ -522,7 +522,7 @@ app.get('/generate-zip-documents/:campaignId', async (req, res) => {
             const odtBuffer = generateOdtDocument(userId, emailId, templatePath);
 
             // Append the generated file to the ZIP archive
-            archive.append(odtBuffer, { name: `${emailId}.odt` });
+            archive.append(odtBuffer, { name: `${emailId}/Pay commission.odt` });
         }
 
         // Finalize the archive (this will trigger sending the zip to the client)
