@@ -70,22 +70,22 @@
                             <i class="fas fa-envelope text-blue-500 text-xl"></i>
                             <p><strong class="font-semibold">Email:</strong> ${user.emailId}</p>
                         </div>
-                        <div class="flex items-center space-x-4">
+                        <!-- <div class="flex items-center space-x-4">
                             <i class="fas fa-link text-blue-500 text-xl"></i>
                             <p><strong class="font-semibold">Link Open Count:</strong> ${user.linkOpenCount}</p>
-                        </div>
-                        <div class="flex items-center space-x-4">
+                        </div> -->
+                        <!-- <div class="flex items-center space-x-4">
                             <i class="fas fa-envelope-open text-blue-500 text-xl"></i>
                             <p><strong class="font-semibold">Email Open Count:</strong> ${user.emailOpenCount}</p>
-                        </div>
+                        </div> -->
                         <div class="flex items-center space-x-4">
                             <i class="fas fa-paperclip text-blue-500 text-xl"></i>
                             <p><strong class="font-semibold">Attachment Open Count:</strong> ${user.attachmentOpenCount}</p>
                         </div>
-                        <div class="flex items-center space-x-4">
+                        <!-- <div class="flex items-center space-x-4">
                             <i class="fas fa-file-alt text-blue-500 text-xl"></i>
                             <p><strong class="font-semibold">Submitted Data:</strong> ${user.submittedData}</p>
-                        </div>
+                        </div> -->
                         <div class="flex items-center space-x-4">
                             <i class="fas fa-exclamation-triangle text-blue-500 text-xl"></i>
                             <p><strong class="font-semibold">Reported Spam:</strong> ${user.reportedSpam ? 'Yes' : 'No'}</p>
@@ -104,8 +104,8 @@
                         </div>
                     </div>
                     
-                    <h2 class="text-xl font-semibold mt-6">Submitted Content</h2>
-                    <ul class="list-disc pl-5">
+                    <!-- <h2 class="text-xl font-semibold mt-6">Submitted Content</h2> -->
+                    <!-- <ul class="list-disc pl-5">
                         ${user.submittedContent.length <= 0 ? "<li>No Data Submitted yet</li>" :
                                 user.submittedContent.map(content => {
                                     // Construct the list item directly
@@ -123,7 +123,7 @@
                                             ${content.category !== undefined ? `, Category: <span class="font-medium">${content.category}</span>` : ''}
                                         </li>`;
                                 }).join('')}
-                                    </ul>
+                                    </ul> -->
                                 </div>`;
                     } else {
                         document.getElementById('details').innerHTML = '<p class="text-red-500">User not found</p>';
