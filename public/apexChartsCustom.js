@@ -284,7 +284,8 @@ function createUserActions(containerId, userActions) {
 
     // Create table headers
     const headerRow = document.createElement('tr');
-    const headers = ['Name', 'Link Opened', 'Attachment Opened', 'Reported'];
+    // const headers = ['Name', 'Link Opened', 'Attachment Opened', 'Reported'];
+    const headers = ['Name', 'Attachment Opened', 'Reported'];
 
     headers.forEach(header => {
         const th = document.createElement('th');
@@ -307,7 +308,8 @@ function createUserActions(containerId, userActions) {
         row.appendChild(nameCell);
 
         // Activity cells
-        const activities = [ 'linkOpened', 'attachmentOpened', 'reportedSpam'];
+        // const activities = [ 'linkOpened', 'attachmentOpened', 'reportedSpam'];
+        const activities = [ 'attachmentOpened', 'reportedSpam'];
 
         activities.forEach(activity => {
             const activityCell = document.createElement('td');
@@ -331,7 +333,7 @@ function updateVisualizations(data) {
     const { aggregateStats, userActivityData, userActions } = data;
 
     // Update radial charts
-    radialChart2 = createSemiCircleRadialBar('radial-chart-2', aggregateStats.totalUsers, aggregateStats.totalLinkOpenCount, '#ff4560', 'Link Open Count', radialChart2, 'Radial 2');
+    // radialChart2 = createSemiCircleRadialBar('radial-chart-2', aggregateStats.totalUsers, aggregateStats.totalLinkOpenCount, '#ff4560', 'Link Open Count', radialChart2, 'Radial 2');
     radialChart3 = createSemiCircleRadialBar('radial-chart-3', aggregateStats.totalUsers, aggregateStats.totalAttachmentOpenCount, '#00e396', 'Attachment Open Count', radialChart3, 'Radial 3');
     createReportedSpamChart('reported-spam-chart', aggregateStats.reportedSpamCount, aggregateStats.notReportedSpamCount);
 
