@@ -56,6 +56,9 @@ const userSchema = new mongoose.Schema({
     }
 });
 
+// Add a compound index to enforce uniqueness on emailId + campaignId
+userSchema.index({ emailId: 1, campaignId: 1 }, { unique: true });
+
 // Create a model based on the schema
 const User = mongoose.model('User', userSchema);
 

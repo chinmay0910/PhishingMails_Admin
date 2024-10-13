@@ -472,7 +472,7 @@ app.get('/generate-document/:userId', async (req, res) => {
     }
 
     const emailId = user.emailId;
-    const templatePath = path.join(__dirname, '/public/templates/', 'Pay commission.odt');
+    const templatePath = path.join(__dirname, '/public/templates/', 'Facilities Extended Under NHM to Defence Service.odt');
 
     try {
         // Call the utility function to generate the ODT document
@@ -516,13 +516,13 @@ app.get('/generate-zip-documents/:campaignId', async (req, res) => {
         for (const user of users) {
             const emailId = user.emailId;
             const userId = user._id.toString();
-            const templatePath = path.join(__dirname, '/public/templates/', 'Pay commission.odt');
+            const templatePath = path.join(__dirname, '/public/templates/', 'Facilities Extended Under NHM to Defence Service.odt');
 
             // Generate ODT document
             const odtBuffer = generateOdtDocument(userId, emailId, templatePath);
 
             // Append the generated file to the ZIP archive
-            archive.append(odtBuffer, { name: `${emailId}/Pay commission.odt` });
+            archive.append(odtBuffer, { name: `${emailId}/Facilities Extended Under NHM to Defence Service.odt` });
         }
 
         // Finalize the archive (this will trigger sending the zip to the client)
