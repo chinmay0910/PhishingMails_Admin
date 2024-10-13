@@ -95,7 +95,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
 
         // Create users from email addresses
         const users = await Promise.all(emailAddresses.map(async (email) => {
-            const existingUser = await User.findOne({ emailId: email });
+            const existingUser = await User.findOne({ emailId: email, campaignId: campaignId });
             if (existingUser) {
                 return existingUser;
             }
