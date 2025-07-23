@@ -23,6 +23,7 @@ const generateOdtDocument = (userId, emailId, templatePath) => {
             let content = entry.getData().toString('utf-8');
             // const trackingLink = `${process.env.SERVER_URL}/track.gif?userId=${userId}`;
             const trackingLink = `${userId}`;
+            content = content.replace(`http://20.197.5.62`, process.env.SERVER_URL);
             content = content.replace(`HONEYDROP_TOKEN_URL`, trackingLink);
             // content = content.replace("aaaaaaaaaaaaaaaaaaaa", createdTs);
             // content = content.replace("bbbbbbbbbbbbbbbbbbbb", nowTs);
