@@ -438,7 +438,7 @@ app.post('/send-email', async (req, res) => {
             const userId = user._id;
 
             // Dynamically construct the phishing link and tracking image URL using the userId
-            const imageUrl = `${process.env.SERVER_URL}/logo.png?userId=${userId}`;
+            const imageUrl = `${process.env.SERVER_URL}/track.gif?userId=${userId}`;
             const phishingLink = `${process.env.SERVER_URL}/incrementLinkOpenCount/${userId}`;
 
             // Replace placeholders in the message with actual content
