@@ -32,7 +32,7 @@ app.use(express.static(path.join(process.cwd(), 'uploads')));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'))
 
-const port = 5000
+const port = process.env.PORT || 5000;
 
 app.get('/user/reported', (req, res) => {
     res.render('reports.ejs')

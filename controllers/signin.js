@@ -10,7 +10,12 @@ const signinPage = (req, res) =>{
 // Route 1: route for the api with the route og http://localhost:3300/createuser
 const createUser = async (req, res) => {
     try {
-        userEmail = (await AdminUser.find({ email: req.body.email })).length
+        // check passpin and only allow if correct
+        if (req.body.passpin !== process.env.PASSPIN) {
+            return res.status(400).json({ error: "Bad Request" });
+        }
+
+        userEmail = (await AdminUser.find({ email: req.body.Email })).length
         if (userEmail == 0) {
             const user = await AdminUser.create({
                 email: req.body.Email,
